@@ -1,0 +1,82 @@
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "G:/Program Files/GNUARM/5.4 2016q3/lib/gcc/arm-none-eabi/5.4.1/include",
+                "${workspaceRoot}/Inc",
+                "${workspaceRoot}/Drivers/STM32F1xx_HAL_Driver/Inc",
+                "${workspaceRoot}/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy",
+                "${workspaceRoot}/Drivers/CMSIS/Device/ST/STM32F1xx/Include",
+                "${workspaceRoot}/Drivers/CMSIS/Include",
+                "${workspaceRoot}",
+                "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS",
+                "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/include",
+                "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3",
+                "G:/Program Files/GNUARM/5.4 2016q3/arm-none-eabi/include"
+            ],
+            "browse": {
+                "path": [
+                    "G:/Program Files/GNUARM/5.4 2016q3/lib/gcc/arm-none-eabi/5.4.1/include",
+                    "${workspaceRoot}/Inc",
+                    "${workspaceRoot}/Drivers/STM32F1xx_HAL_Driver/Inc",
+                    "${workspaceRoot}/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy",
+                    "${workspaceRoot}/Drivers/CMSIS/Device/ST/STM32F1xx/Include",
+                    "${workspaceRoot}/Drivers/CMSIS/Include",
+                    "${workspaceRoot}",
+                    "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS",
+                    "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/include",
+                    "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3"
+                ]
+            },
+            "defines": [
+                "STM32F103xB",
+                "__weak=__attribute__((weak))",
+                "__packed=__attribute__((__packed__))",
+                "uint32_t=unsigned int",
+                "USE_HAL_DRIVER"
+            ],
+            "limitSymbolsToIncludedHeaders": true,
+            "intelliSenseMode": "clang-x64"
+        },
+        {
+            "name": "Linux",
+            "includePath": [
+                "/usr/local/arm-none-eabi/include",
+                "${workspaceRoot}/Inc",
+                "${workspaceRoot}/Drivers/STM32F1xx_HAL_Driver/Inc",
+                "${workspaceRoot}/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy",
+                "${workspaceRoot}/Drivers/CMSIS/Device/ST/STM32F1xx/Include",
+                "${workspaceRoot}/Drivers/CMSIS/Include",
+                "${workspaceRoot}",
+                "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS",
+                "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/include",
+                "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3"
+            ],
+            "browse": {
+                "path": [
+                    "/usr/local/arm-none-eabi/include",
+                    "${workspaceRoot}/Inc",
+                    "${workspaceRoot}/Drivers/STM32F1xx_HAL_Driver/Inc",
+                    "${workspaceRoot}/Drivers/STM32F1xx_HAL_Driver/Inc/Legacy",
+                    "${workspaceRoot}/Drivers/CMSIS/Device/ST/STM32F1xx/Include",
+                    "${workspaceRoot}/Drivers/CMSIS/Include",
+                    "${workspaceRoot}",
+                    "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS",
+                    "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/include",
+                    "${workspaceFolder}/Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM3"
+                ]
+            },
+            "defines": [
+                "STM32F103xE",
+                "__weak=__attribute__((weak))",
+                "__packed=__attribute__((__packed__))",
+                "uint32_t=unsigned int",
+                "USE_HAL_DRIVER"
+            ],
+            "limitSymbolsToIncludedHeaders": true,
+            "intelliSenseMode": "clang-x64"
+        }
+    ],
+    "version": 4
+}
