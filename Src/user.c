@@ -4,6 +4,8 @@
 #include "cmsis_os.h"
 #include "math.h"
 
+UART_HandleTypeDef huart1;
+
 //Reg of tim channel
 uint16_t *vPwm[4];
 //GPIO of motor
@@ -113,9 +115,12 @@ void MotorChangeSpeed(void)
 
 //USART1RX -> Point -> PID -> Move -> Command -> USART1TX
 
-void RotatePID()
+void RotatePID(void)
 {
-	//
+	int8_t datas[4];
+	HAL_UART_Receive(&huart1, (uint8_t *)datas, 4, 10);
+	speedX = datas[0];
+	speedY = datas[1];
 }
 
 //Servo

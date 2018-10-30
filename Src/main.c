@@ -442,8 +442,8 @@ void StartDefaultTask(void const *argument)
     osDelay(500);
     LED_GPIO_Port->BSRR = LED_Pin << 16;
     osDelay(500);
-    MotorChangeSpeed();
-    ServoChangePWM();
+    // MotorChangeSpeed();
+    // ServoChangePWM();
   }
   /* USER CODE END 5 */
 }
@@ -458,12 +458,14 @@ void TaskMotorSpeed(void const *argument)
   for (;;)
   {
     MotorCtrlLoop();
-    while (t--)
+    RotatePID();
+    while (t)
     {
       STEP_GPIO_Port->BSRR = STEP_Pin;
       osDelay(2);
       STEP_GPIO_Port->BSRR = (uint32_t)STEP_Pin << 16;
       osDelay(2);
+      t--;
     }
   }
   /* USER CODE END TaskMotorSpeed */

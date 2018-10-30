@@ -111,6 +111,8 @@
 void MotorCtrlLoop(void);
 void MotorCtrlInit(void);
 
+void RotatePID(void); //²âÊÔ´®¿Ú
+
 void MotorChangeSpeed(void);
 void ServoChangePWM(void);
 /* USER CODE END Private defines */
