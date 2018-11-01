@@ -4,7 +4,7 @@
 #include "cmsis_os.h"
 #include "math.h"
 
-UART_HandleTypeDef huart1;
+extern UART_HandleTypeDef huart1;
 
 //Reg of tim channel
 uint16_t *vPwm[4];
@@ -118,7 +118,10 @@ void MotorChangeSpeed(void)
 void RotatePID(void)
 {
 	int8_t datas[4];
-	HAL_UART_Receive(&huart1, (uint8_t *)datas, 4, 10);
+	if (HAL_UART_Receive(&huart1, (uint8_t *)datas, 4, 10) == HAL_OK)
+	{
+		HAL_UART_Transmit(&huart1, (uint8_t *)datas, 4, 10);
+	}
 	speedX = datas[0];
 	speedY = datas[1];
 }

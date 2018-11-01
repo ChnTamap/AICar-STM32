@@ -101,7 +101,7 @@
 #define MI_N1_GPIO_Port GPIOB
 
 /* ########################## Assert Selection ############################## */
-/**
+/**dsawsawwwsssssawsaaaaaaaaaaaaaaaaaaa
   * @brief Uncomment the line below to expanse the "assert_param" macro in the 
   *        HAL drivers code
   */
