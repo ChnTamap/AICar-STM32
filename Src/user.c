@@ -128,7 +128,7 @@ void MotorChangeSpeed(void)
 //USART1RX -> Point -> PID -> Move -> Command -> USART1TX
 
 //´®¿Ú PID ¿ØÖÆÐý×ªDEMO
-#define USART_DATA_LEN 2
+#define USART_DATA_LEN 3
 void RotatePID(void)
 {
 	int16_t datas[USART_DATA_LEN]; //Bufs
@@ -140,6 +140,7 @@ void RotatePID(void)
 		//Ctrl motor
 		speedX = datas[0];
 		speedY = datas[1];
+		rotation = datas[2];
 	}
 }
 
