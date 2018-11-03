@@ -39,6 +39,7 @@ int16_t speedX = 0;
 int16_t speedY = 0;
 int16_t rotation = 0;
 
+//电机寄存器、GPIO初始化
 void MotorCtrlInit(void)
 {
 	vPwm[0] = (uint16_t *)&(TIM2->CCR1);
@@ -52,6 +53,7 @@ void MotorCtrlInit(void)
 	MOTOR_BSRR[3] = (uint32_t *)&(MI_P4_GPIO_Port->BSRR);
 	STBY_GPIO_Port->BSRR = STBY_Pin;
 }
+//电机速度控制（无PID）
 void MotorCtrlLoop(void)
 {
 	int16_t speedS[4];
@@ -77,37 +79,47 @@ void MotorCtrlLoop(void)
 	}
 }
 
+//电机控制DEMO
 #define PI 3.1415926535
 #define StepDelayTime 2000
 #define VEC_SPD 5000
 void MotorChangeSpeed(void)
 {
+	//Motor
+	//Up
 	speedY = VEC_SPD;
 	speedX = 0000;
 	osDelay(StepDelayTime);
+	//Right
 	speedY = 0000;
 	speedX = VEC_SPD;
 	osDelay(StepDelayTime);
+	//Down
 	speedY = -VEC_SPD;
 	speedX = 0000;
 	osDelay(StepDelayTime);
+	//Left
 	speedY = 0000;
 	speedX = -VEC_SPD;
 	osDelay(StepDelayTime);
+	//Circle
 	for (double i = 0; i < 2 * PI; i += 0.01)
 	{
 		speedX = VEC_SPD * cos(i);
 		speedY = VEC_SPD * sin(i);
 		osDelay(20);
 	}
+	//Rotate
 	speedY = 0000;
 	speedX = 0000;
 	rotation = VEC_SPD;
 	osDelay(StepDelayTime);
+	//Rotate
 	speedY = 0000;
 	speedX = 0000;
 	rotation = -VEC_SPD;
 	osDelay(StepDelayTime);
+	//Stop
 	speedY = 0000;
 	speedX = 0000;
 	rotation = 0000;
@@ -115,15 +127,20 @@ void MotorChangeSpeed(void)
 
 //USART1RX -> Point -> PID -> Move -> Command -> USART1TX
 
+//串口 PID 控制旋转DEMO
+#define USART_DATA_LEN 2
 void RotatePID(void)
 {
-	int8_t datas[4];
-	if (HAL_UART_Receive(&huart1, (uint8_t *)datas, 4, 10) == HAL_OK)
+	int16_t datas[USART_DATA_LEN]; //Bufs
+	//Receive data
+	if (HAL_UART_Receive(&huart1, (uint8_t *)datas, USART_DATA_LEN * 2, 10) == HAL_OK)
 	{
-		HAL_UART_Transmit(&huart1, (uint8_t *)datas, 4, 10);
+		//Transmit back test
+		HAL_UART_Transmit(&huart1, (uint8_t *)datas, USART_DATA_LEN * 2, 10);
+		//Ctrl motor
+		speedX = datas[0];
+		speedY = datas[1];
 	}
-	speedX = datas[0];
-	speedY = datas[1];
 }
 
 //Servo
