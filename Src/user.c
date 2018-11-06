@@ -128,7 +128,7 @@ void MotorChangeSpeed(void)
 //USART1RX -> Point -> PID -> Move -> Command -> USART1TX
 
 //´®¿Ú PID ¿ØÖÆÐý×ªDEMO
-#define USART_DATA_LEN 3
+#define USART_DATA_LEN 4
 void RotatePID(void)
 {
 	int16_t datas[USART_DATA_LEN]; //Bufs
@@ -138,9 +138,16 @@ void RotatePID(void)
 		//Transmit back test
 		HAL_UART_Transmit(&huart1, (uint8_t *)datas, USART_DATA_LEN * 2, 10);
 		//Ctrl motor
-		speedX = datas[0];
+		datas[0] -= 320;
+		if (datas[0] > 300)
+			rotation = 6000;
+		else if (datas[0] < -300)
+			rotation = -6000;
+		else
+			rotation = datas[0] * 20;
+		/* speedX = datas[0];
 		speedY = datas[1];
-		rotation = datas[2];
+		rotation = datas[2]; */
 	}
 }
 
