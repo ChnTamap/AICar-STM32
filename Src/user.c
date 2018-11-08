@@ -131,18 +131,27 @@ void MotorChangeSpeed(void)
 #define USART_DATA_LEN 4
 #define TARGET_X 320
 #define TARGET_Y 400
+#define TARGET_H 200
 int16_t datas[USART_DATA_LEN]; //Bufs
 void ReceiveDatas(void)
 {
 	//Receive data
-	if (HAL_UART_Receive(&huart1, (uint8_t *)datas, USART_DATA_LEN * 2, 10) == HAL_OK)
+	if (HAL_UART_Receive(&huart1, (uint8_t *)datas, USART_DATA_LEN * 2, 100) == HAL_OK)
 	{
 		//Transmit back test
-		HAL_UART_Transmit(&huart1, (uint8_t *)datas, USART_DATA_LEN * 2, 10);
-		//X
-		datas[0] = TARGET_X - datas[0];
-		//Y
-		datas[1] -= TARGET_Y;
+		HAL_UART_Transmit(&huart1, (uint8_t *)datas, USART_DATA_LEN * 2, 100);
+		if (datas[0] > 0 && datas[0] < 640)
+		{
+			//X
+			datas[0] = TARGET_X - datas[0];
+			//Y
+			datas[3] -= TARGET_H;
+		}
+	}
+	else
+	{
+		datas[0] *= 0.5;
+		datas[3] *= 0.5;
 	}
 }
 /* PID */
@@ -158,32 +167,44 @@ PID_typedef pidRot;
 PID_typedef pidMov;
 void MotorPIDInit(void)
 {
-	pidRot.P = 20;
+	pidRot.P = 10;
 	pidRot.I = 0.01;
-	pidRot.D = 1;
+	pidRot.D = 15;
 	pidRot.lastDiv = TARGET_X;
 	pidRot.addI = 0;
 
-	pidMov.P = 20;
+	pidMov.P = 30;
 	pidMov.I = 0.01;
-	pidMov.D = 1;
-	pidMov.lastDiv = TARGET_Y;
+	pidMov.D = 20;
+	pidMov.lastDiv = TARGET_H;
 	pidMov.addI = 0;
 }
 int16_t funPID(int16_t div, PID_typedef *pid)
 {
 	int16_t value = div * pid->P;
 	pid->addI += div * pid->I;
+	if (pid->addI / value > 1)
+	{
+		pid->addI = value;
+	}
 	value += pid->addI;
-	value += pid->lastDiv - div;
+	value += (pid->lastDiv - div) * pid->D;
 	pid->lastDiv = div;
 	return value;
 }
 /* Motor Ctrl PID */
 void MotorPID(void)
 {
-	funPID(datas[0], &pidRot);
-	funPID(datas[1], &pidMov);
+	rotation = funPID(datas[0], &pidRot);
+	if (rotation > 8000)
+		rotation = 8000;
+	else if (rotation < -8000)
+		rotation = -8000;
+	speedY = funPID(datas[3], &pidMov);
+	if (speedY > 8000)
+		speedY = 8000;
+	else if (speedY < -8000)
+		speedY = -8000;
 }
 
 //Servo

@@ -158,15 +158,15 @@ PID_typedef pidRot;
 PID_typedef pidMov;
 void MotorPIDInit(void)
 {
-	pidRot.P = 20;
-	pidRot.I = 0.01;
-	pidRot.D = 1;
+	pidRot.P = 0;
+	pidRot.I = 0;
+	pidRot.D = 0;
 	pidRot.lastDiv = TARGET_X;
 	pidRot.addI = 0;
 
-	pidMov.P = 20;
-	pidMov.I = 0.01;
-	pidMov.D = 1;
+	pidMov.P = 0;
+	pidMov.I = 0;
+	pidMov.D = 0;
 	pidMov.lastDiv = TARGET_Y;
 	pidMov.addI = 0;
 }
@@ -182,8 +182,8 @@ int16_t funPID(int16_t div, PID_typedef *pid)
 /* Motor Ctrl PID */
 void MotorPID(void)
 {
-	funPID(datas[0], &pidRot);
-	funPID(datas[1], &pidMov);
+	rotation = funPID(datas[0], &pidRot);
+	speedY = funPID(datas[1], &pidMov);
 }
 
 //Servo
