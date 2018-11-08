@@ -458,7 +458,7 @@ void TaskMotorSpeed(void const *argument)
   for (;;)
   {
     MotorCtrlLoop();
-    RotatePID();
+    ReceiveDatas();
     while (t)
     {
       STEP_GPIO_Port->BSRR = STEP_Pin;
