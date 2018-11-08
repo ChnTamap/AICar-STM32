@@ -101,7 +101,7 @@
 #define MI_N1_GPIO_Port GPIOB
 
 /* ########################## Assert Selection ############################## */
-/**dsawsawwwsssssawsaaaaaaaaaaaaaaaaaaa
+/**
   * @brief Uncomment the line below to expanse the "assert_param" macro in the 
   *        HAL drivers code
   */
@@ -111,7 +111,10 @@
 void MotorCtrlLoop(void);
 void MotorCtrlInit(void);
 
-void ReceiveDatas(void); //²âÊÔ´®¿Ú
+/* ´®¿Ú PID */
+void ReceiveDatas(void);
+void MotorPIDInit(void);
+void MotorPID(void);
 
 void MotorChangeSpeed(void);
 void ServoChangePWM(void);

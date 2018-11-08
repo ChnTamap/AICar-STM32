@@ -127,7 +127,7 @@ void MotorChangeSpeed(void)
 
 //USART1RX -> Point -> PID -> Move -> Command -> USART1TX
 
-//串口 PID 控制旋转DEMO
+//串口 PID
 #define USART_DATA_LEN 4
 #define TARGET_X 320
 #define TARGET_Y 400
@@ -139,37 +139,51 @@ void ReceiveDatas(void)
 	{
 		//Transmit back test
 		HAL_UART_Transmit(&huart1, (uint8_t *)datas, USART_DATA_LEN * 2, 10);
-		/* Ctrl motor */
-		//Rotate
+		//X
 		datas[0] = TARGET_X - datas[0];
-		if (datas[0] > 300)
-		{
-			rotation = 6000;
-			speedX = 1500;
-		}
-		else if (datas[0] < -300)
-		{
-			rotation = -6000;
-			speedX = -1500;
-		}
-		else
-		{
-			rotation = datas[0] * 20;
-			speedX = datas[0] * 5;
-		}
-		//Move
+		//Y
 		datas[1] -= TARGET_Y;
-		if (datas[1] > 300)
-			speedY = 6000;
-		else if (datas[1] < -300)
-			speedY = -6000;
-		else
-			speedY = datas[1] * 20;
-
-		/* speedX = datas[0];
-		speedY = datas[1];
-		rotation = datas[2]; */
 	}
+}
+/* PID */
+typedef struct
+{
+	double P;
+	double I;
+	double D;
+	int lastDiv;
+	int addI;
+} PID_typedef;
+PID_typedef pidRot;
+PID_typedef pidMov;
+void MotorPIDInit(void)
+{
+	pidRot.P = 20;
+	pidRot.I = 0.01;
+	pidRot.D = 1;
+	pidRot.lastDiv = TARGET_X;
+	pidRot.addI = 0;
+
+	pidMov.P = 20;
+	pidMov.I = 0.01;
+	pidMov.D = 1;
+	pidMov.lastDiv = TARGET_Y;
+	pidMov.addI = 0;
+}
+int16_t funPID(int16_t div, PID_typedef *pid)
+{
+	int16_t value = div * pid->P;
+	pid->addI += div * pid->I;
+	value += pid->addI;
+	value += pid->lastDiv - div;
+	pid->lastDiv = div;
+	return value;
+}
+/* Motor Ctrl PID */
+void MotorPID(void)
+{
+	funPID(datas[0], &pidRot);
+	funPID(datas[1], &pidMov);
 }
 
 //Servo

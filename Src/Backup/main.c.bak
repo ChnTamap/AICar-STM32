@@ -121,6 +121,10 @@ int main(void)
   MX_TIM3_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
+  //Init
+  MotorCtrlInit();
+  MotorPIDInit();
+
   HAL_TIM_Base_Start(&htim2);
   HAL_TIM_Base_Start(&htim3);
 
@@ -433,6 +437,7 @@ static void MX_GPIO_Init(void)
 /* StartDefaultTask function */
 void StartDefaultTask(void const *argument)
 {
+
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
   for (;;)
@@ -441,7 +446,8 @@ void StartDefaultTask(void const *argument)
     osDelay(500);
     LED_GPIO_Port->BSRR = LED_Pin << 16;
     osDelay(500);
-    MotorChangeSpeed();
+    // MotorChangeSpeed();
+    // ServoChangePWM();
   }
   /* USER CODE END 5 */
 }
@@ -449,13 +455,20 @@ void StartDefaultTask(void const *argument)
 /* TaskMotorSpeed function */
 void TaskMotorSpeed(void const *argument)
 {
+  // static uint16_t t = 50;
   /* USER CODE BEGIN TaskMotorSpeed */
   /* Infinite loop */
-  MotorCtrlInit();
   for (;;)
   {
-    MotorCtrlLoop();
-    osDelay(500);
+    ReceiveDatas();
+    // while (t)
+    // {
+    //   STEP_GPIO_Port->BSRR = STEP_Pin;
+    //   osDelay(2);
+    //   STEP_GPIO_Port->BSRR = (uint32_t)STEP_Pin << 16;
+    //   osDelay(2);
+    //   t--;
+    // }
   }
   /* USER CODE END TaskMotorSpeed */
 }
