@@ -7,7 +7,8 @@
 extern UART_HandleTypeDef huart1;
 
 //Reg of tim channel
-uint16_t *vPwm[4];
+uint16_t *vPwm[4];   //Motor
+uint16_t *serPwm[4]; //Servo
 //GPIO of motor
 uint32_t *MOTOR_BSRR[4];
 uint32_t const MOTOR_POS[4] = {
@@ -34,10 +35,11 @@ uint32_t const MOTOR_OFF[4] = {
 	(uint32_t)(MI_P2_Pin | MI_N2_Pin) << 16,
 	(uint32_t)(MI_P3_Pin | MI_N3_Pin) << 16,
 	(uint32_t)(MI_N4_Pin | MI_P4_Pin) << 16};
-//SpeedXY
+//SpeedXY Rot ServoSet
 int16_t speedX = 0;
 int16_t speedY = 0;
 int16_t rotation = 0;
+uint16_t servoSet[4] = {1500, 550, 2350, 1000};
 
 //电机寄存器、GPIO初始化
 void MotorCtrlInit(void)
@@ -46,6 +48,10 @@ void MotorCtrlInit(void)
 	vPwm[1] = (uint16_t *)&(TIM2->CCR2);
 	vPwm[2] = (uint16_t *)&(TIM2->CCR3);
 	vPwm[3] = (uint16_t *)&(TIM2->CCR4);
+	serPwm[0] = (uint16_t *)&(TIM3->CCR1);
+	serPwm[1] = (uint16_t *)&(TIM3->CCR2);
+	serPwm[2] = (uint16_t *)&(TIM3->CCR3);
+	serPwm[3] = (uint16_t *)&(TIM3->CCR4);
 
 	MOTOR_BSRR[0] = (uint32_t *)&(MI_P1_GPIO_Port->BSRR);
 	MOTOR_BSRR[1] = (uint32_t *)&(MI_P2_GPIO_Port->BSRR);
@@ -130,7 +136,7 @@ void MotorChangeSpeed(void)
 //串口 PID
 #define USART_DATA_LEN 4
 #define TARGET_X 320
-#define TARGET_Y 400
+#define TARGET_Y 240
 #define TARGET_H 200
 int16_t datas[USART_DATA_LEN]; //Bufs
 void ReceiveDatas(void)
@@ -145,13 +151,13 @@ void ReceiveDatas(void)
 			//X
 			datas[0] = TARGET_X - datas[0];
 			//Y
-			datas[3] -= TARGET_H;
+			datas[1] = TARGET_Y - datas[1];
 		}
 	}
 	else
 	{
 		datas[0] *= 0.5;
-		datas[3] *= 0.5;
+		datas[1] *= 0.5;
 	}
 }
 /* PID */
@@ -176,7 +182,7 @@ void MotorPIDInit(void)
 	pidMov.P = 30;
 	pidMov.I = 0.01;
 	pidMov.D = 20;
-	pidMov.lastDiv = TARGET_H;
+	pidMov.lastDiv = TARGET_Y;
 	pidMov.addI = 0;
 }
 int16_t funPID(int16_t div, PID_typedef *pid)
@@ -200,7 +206,7 @@ void MotorPID(void)
 		rotation = 8000;
 	else if (rotation < -8000)
 		rotation = -8000;
-	speedY = funPID(datas[3], &pidMov);
+	speedY = funPID(datas[1], &pidMov);
 	if (speedY > 8000)
 		speedY = 8000;
 	else if (speedY < -8000)
@@ -208,16 +214,67 @@ void MotorPID(void)
 }
 
 //Servo
+#define SERVO_TIME_STEP 1
+//底部舵机
+#define SER_0_UP 550
+#define SER_0_DOWN 1800
+//中间舵机
+#define SER_1_UP 2350
+#define SER_1_DOWN 1900
+//手爪
+#define SER_2_OPEN 1000
+#define SER_2_CLOSE 1650
+uint8_t servoSpeed[4] = {0, 4, 4, 10};
 void ServoChangePWM(void)
 {
-	TIM3->CCR1 = 1500;
-	TIM3->CCR2 = 1500;
-	TIM3->CCR3 = 1500;
-	TIM3->CCR4 = 1500;
-	osDelay(2000);
-	TIM3->CCR1 = 1800;
-	TIM3->CCR2 = 1800;
-	TIM3->CCR3 = 1800;
-	TIM3->CCR4 = 1800;
-	osDelay(1000);
+	static uint8_t t = 0;
+	uint8_t i = 0;
+	int16_t v;
+	// TIM3->CCR1 = 1500;
+	// TIM3->CCR2 = 1500;
+	// TIM3->CCR3 = 1500;
+	// TIM3->CCR4 = 1500;
+	if (t == 0)
+	{
+		t = SERVO_TIME_STEP;
+
+		//Move servo 恒定速度运动舵机
+		for (i = 0; i < 4; i++)
+		{
+			v = servoSet[i] - *serPwm[i];
+			if (v > servoSpeed[i])
+			{
+				*serPwm[i] += servoSpeed[i];
+			}
+			else if (v < -servoSpeed[i])
+			{
+				*serPwm[i] -= servoSpeed[i];
+			}
+			else
+			{
+				*serPwm[i] = servoSet[i];
+			}
+		}
+
+		//Test
+		if (*serPwm[1] == SER_0_UP) //完成抬起
+		{
+			//落下
+			servoSet[1] = SER_0_DOWN;
+			servoSet[2] = SER_1_DOWN;
+			servoSet[3] = SER_2_OPEN;
+		}
+		else if (*serPwm[1] == SER_0_DOWN) //完成落下
+		{
+			//关闭手爪
+			servoSet[3] = SER_2_CLOSE;
+			if (*serPwm[3] == 1650) //完成抓取
+			{
+				//抬起
+				servoSet[1] = 550;
+				servoSet[2] = 2350;
+			}
+		}
+	}
+	t--;
 }
