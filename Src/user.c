@@ -138,6 +138,18 @@ void MotorChangeSpeed(void)
 #define TARGET_X 320
 #define TARGET_Y 240
 #define TARGET_H 200
+#define TARGET_RAGE_X 100
+#define TARGET_RAGE_Y 30
+#define TARGET_CATCH_TIMES 6
+enum Stage
+{
+	stage_find_ball,
+	stage_catch_ball,
+	stage_find_rect,
+	stage_res_ball
+};
+uint8_t catch_times = 0;//球在可抓取范围内的次数
+uint8_t stage = 0;//处在的阶段
 int16_t datas[USART_DATA_LEN]; //Bufs
 void ReceiveDatas(void)
 {
@@ -152,6 +164,27 @@ void ReceiveDatas(void)
 			datas[0] = TARGET_X - datas[0];
 			//Y
 			datas[1] = TARGET_Y - datas[1];
+
+			//检测球在可抓取范围内
+			if (datas[0] < -TARGET_RAGE_X && datas[0] > TARGET_RAGE_X)
+			{
+				//False
+				catch_times = 0;
+			}
+			else if(datas[1] < -TARGET_RAGE_Y && datas[1] > TARGET_RAGE_Y)
+			{
+				//False
+				catch_times = 0;
+			}
+			else
+			{
+				//True
+				catch_times++;
+				if(catch_times >= TARGET_CATCH_TIMES)
+				{
+					//抓取
+				}
+			}
 		}
 	}
 	else
