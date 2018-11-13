@@ -168,6 +168,16 @@
           <WinNumber>1</WinNumber>
           <ItemText>((TIM_TypeDef *)(0x40000000U + 0x00000400U))-&gt;CCR4,0x0A</ItemText>
         </Ww>
+        <Ww>
+          <count>4</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>stage</ItemText>
+        </Ww>
+        <Ww>
+          <count>5</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>catch_times</ItemText>
+        </Ww>
       </WatchWindow1>
       <Tracepoint>
         <THDelay>0</THDelay>
