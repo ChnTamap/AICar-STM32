@@ -133,7 +133,7 @@ void MotorChangeSpeed(void)
 
 //USART1RX -> Point -> PID -> Move -> Command -> USART1TX
 
-//串口 PID
+//串口 PID 流程
 #define USART_DATA_LEN 4
 #define TARGET_X 320
 #define TARGET_Y 240
@@ -148,16 +148,14 @@ enum Stage
 	stage_find_rect,
 	stage_res_ball
 };
-uint8_t catch_times = 0;//球在可抓取范围内的次数
-uint8_t stage = 0;//处在的阶段
+uint8_t catch_times = 0;	   //球在可抓取范围内的次数
+uint8_t stage = 0;			   //处在的阶段
 int16_t datas[USART_DATA_LEN]; //Bufs
 void ReceiveDatas(void)
 {
 	//Receive data
 	if (HAL_UART_Receive(&huart1, (uint8_t *)datas, USART_DATA_LEN * 2, 100) == HAL_OK)
 	{
-		//Transmit back test
-		HAL_UART_Transmit(&huart1, (uint8_t *)datas, USART_DATA_LEN * 2, 100);
 		if (datas[0] > 0 && datas[0] < 640)
 		{
 			//X
@@ -171,7 +169,7 @@ void ReceiveDatas(void)
 				//False
 				catch_times = 0;
 			}
-			else if(datas[1] < -TARGET_RAGE_Y && datas[1] > TARGET_RAGE_Y)
+			else if (datas[1] < -TARGET_RAGE_Y && datas[1] > TARGET_RAGE_Y)
 			{
 				//False
 				catch_times = 0;
@@ -180,9 +178,16 @@ void ReceiveDatas(void)
 			{
 				//True
 				catch_times++;
-				if(catch_times >= TARGET_CATCH_TIMES)
+				//减慢速度
+				datas[0] *= 0.5;
+				datas[1] *= 0.5;
+				//判断次数
+				if (catch_times >= TARGET_CATCH_TIMES)
 				{
 					//抓取
+					stage++;
+					//Transmit command :0 Ball 1 Stop 2 Area 3 Stop
+					HAL_UART_Transmit(&huart1, &stage, 1, 100);
 				}
 			}
 		}
@@ -193,6 +198,18 @@ void ReceiveDatas(void)
 		datas[1] *= 0.5;
 	}
 }
+void RunTaskLoop(void)
+{
+	if (stage == stage_find_ball || stage == stage_find_rect)
+	{
+		ReceiveDatas();
+	}
+	else
+	{
+		// ServoChangePWM();
+	}
+}
+
 /* PID */
 typedef struct
 {
@@ -289,24 +306,33 @@ void ServoChangePWM(void)
 			}
 		}
 
-		//Test
-		if (*serPwm[1] == SER_0_UP) //完成抬起
+		//Servo Task
+		if (stage == stage_catch_ball)
 		{
-			//落下
-			servoSet[1] = SER_0_DOWN;
-			servoSet[2] = SER_1_DOWN;
-			servoSet[3] = SER_2_OPEN;
-		}
-		else if (*serPwm[1] == SER_0_DOWN) //完成落下
-		{
-			//关闭手爪
-			servoSet[3] = SER_2_CLOSE;
-			if (*serPwm[3] == 1650) //完成抓取
+			//抓球
+			if (*serPwm[1] == SER_0_UP) //完成抬起
 			{
-				//抬起
-				servoSet[1] = 550;
-				servoSet[2] = 2350;
+				//落下
+				servoSet[1] = SER_0_DOWN;
+				servoSet[2] = SER_1_DOWN;
+				servoSet[3] = SER_2_OPEN;
 			}
+			else if (*serPwm[1] == SER_0_DOWN) //完成落下
+			{
+				//关闭手爪
+				servoSet[3] = SER_2_CLOSE;
+				if (*serPwm[3] == SER_2_CLOSE) //完成抓取
+				{
+					//抬起
+					servoSet[1] = SER_0_UP;
+					servoSet[2] = SER_1_UP;
+					stage++;
+				}
+			}
+		}
+		else if(stage == stage_res_ball)
+		{
+			//放球
 		}
 	}
 	t--;
