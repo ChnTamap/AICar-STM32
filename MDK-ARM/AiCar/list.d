@@ -1,8 +1,8 @@
 aicar\list.o: ../Middlewares/Third_Party/FreeRTOS/Source/list.c
-aicar\list.o: G:\Program Files\Keil\uv5\ARM\ARMCC\Bin\..\include\stdlib.h
+aicar\list.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
 aicar\list.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
-aicar\list.o: G:\Program Files\Keil\uv5\ARM\ARMCC\Bin\..\include\stddef.h
-aicar\list.o: G:\Program Files\Keil\uv5\ARM\ARMCC\Bin\..\include\stdint.h
+aicar\list.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
+aicar\list.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 aicar\list.o: ../Inc/FreeRTOSConfig.h
 aicar\list.o: ../Inc/main.h
 aicar\list.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h

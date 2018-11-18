@@ -272,27 +272,30 @@ void MotorPID(void)
 //Servo
 #define SERVO_TIME_STEP 1
 //底部舵机
+#define SER_0 0
 #define SER_0_UP 550
 #define SER_0_OUT 1000
 #define SER_0_DOWN 1800
 //中间舵机
+#define SER_1 1
 #define SER_1_UP 2350
 #define SER_1_OUT 2000
 #define SER_1_DOWN 1900
 //手爪
+#define SER_2 2
 #define SER_2_OPEN 1000
 #define SER_2_CLOSE 1650
-uint8_t servoSpeed[4] = {0, 4, 4, 10};
-uint16_t servoSet[4] = {1500, SER_0_UP, SER_1_UP, SER_2_OPEN};
+//摄像头舵机
+#define SER_CAM 3
+#define SER_CAM_FAR 1500
+#define SER_CAM_NEAR 800
+uint8_t servoSpeed[4] = {4, 4, 10, 100};
+uint16_t servoSet[4] = {SER_0_UP, SER_1_UP, SER_2_OPEN, SER_CAM_NEAR};
 void ServoChangePWM(void)
 {
 	static uint8_t t = 0;
 	uint8_t i = 0;
 	int16_t v;
-	// TIM3->CCR1 = 1500;
-	// TIM3->CCR2 = 1500;
-	// TIM3->CCR3 = 1500;
-	// TIM3->CCR4 = 1500;
 	if (t == 0)
 	{
 		t = SERVO_TIME_STEP;
@@ -319,58 +322,58 @@ void ServoChangePWM(void)
 		if (stage == stage_catch_ball)
 		{
 			//抓球
-			if (*serPwm[1] == SER_0_UP) //完成抬起
+			if (*serPwm[SER_0] == SER_0_UP) //完成抬起
 			{
-				if (*serPwm[3] == SER_2_CLOSE) //未抓球时打开着，闭合意味着抓好了
+				if (*serPwm[SER_2] == SER_2_CLOSE) //未抓球时打开着，闭合意味着抓好了
 				{
 					stage = stage_find_rect;
 				}
 				else
 				{
 					//落下
-					servoSet[1] = SER_0_DOWN;
-					servoSet[2] = SER_1_DOWN;
+					servoSet[SER_0] = SER_0_DOWN;
+					servoSet[SER_1] = SER_1_DOWN;
 				}
 			}
-			else if (*serPwm[1] == SER_0_DOWN) //完成落下
+			else if (*serPwm[SER_0] == SER_0_DOWN) //完成落下
 			{
 				//关闭手爪
-				servoSet[3] = SER_2_CLOSE;
-				if (*serPwm[3] == SER_2_CLOSE) //完成抓取
+				servoSet[SER_2] = SER_2_CLOSE;
+				if (*serPwm[SER_2] == SER_2_CLOSE) //完成抓取
 				{
 					//抬起
-					servoSet[1] = SER_0_UP;
-					servoSet[2] = SER_1_UP;
+					servoSet[SER_0] = SER_0_UP;
+					servoSet[SER_1] = SER_1_UP;
 				}
 			}
 		}
 		else if (stage == stage_res_ball)
 		{
 			//放球
-			if (*serPwm[1] == SER_0_UP) //完成抬起
+			if (*serPwm[SER_0] == SER_0_UP) //完成抬起
 			{
-				if (*serPwm[3] == SER_2_OPEN)
+				if (*serPwm[SER_2] == SER_2_OPEN)
 				{
 					//打开着，意味着刚放完球
-					// servoSet[3] = SER_2_CLOSE;	//不关爪子
+					// servoSet[SER_2] = SER_2_CLOSE;	//不关爪子
 					stage = stage_find_ball; //下一个阶段
 				}
 				else
 				{
 					//伸出
-					servoSet[1] = SER_0_OUT;
-					servoSet[2] = SER_1_OUT;
+					servoSet[SER_0] = SER_0_OUT;
+					servoSet[SER_1] = SER_1_OUT;
 				}
 			}
-			else if (*serPwm[1] == SER_0_OUT) //完成伸出
+			else if (*serPwm[SER_0] == SER_0_OUT) //完成伸出
 			{
 				//打开手爪，释放小球
-				servoSet[3] = SER_2_OPEN;
-				if (*serPwm[3] == SER_2_OPEN) //完成释放
+				servoSet[SER_2] = SER_2_OPEN;
+				if (*serPwm[SER_2] == SER_2_OPEN) //完成释放
 				{
 					//回到抬起
-					servoSet[1] = SER_0_UP;
-					servoSet[2] = SER_1_UP;
+					servoSet[SER_0] = SER_0_UP;
+					servoSet[SER_1] = SER_1_UP;
 					//这里先不关闭，作为完成抬起时，检测是开始放球还是结束放球的依据
 					// servoSet[3] = SER_2_CLOSE;
 				}

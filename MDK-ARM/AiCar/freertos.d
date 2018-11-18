@@ -1,7 +1,7 @@
 aicar\freertos.o: ../Src/freertos.c
 aicar\freertos.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
-aicar\freertos.o: G:\Program Files\Keil\uv5\ARM\ARMCC\Bin\..\include\stddef.h
-aicar\freertos.o: G:\Program Files\Keil\uv5\ARM\ARMCC\Bin\..\include\stdint.h
+aicar\freertos.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
+aicar\freertos.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 aicar\freertos.o: ../Inc/FreeRTOSConfig.h
 aicar\freertos.o: ../Inc/main.h
 aicar\freertos.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h

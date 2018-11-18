@@ -1,9 +1,9 @@
 aicar\queue.o: ../Middlewares/Third_Party/FreeRTOS/Source/queue.c
-aicar\queue.o: G:\Program Files\Keil\uv5\ARM\ARMCC\Bin\..\include\stdlib.h
-aicar\queue.o: G:\Program Files\Keil\uv5\ARM\ARMCC\Bin\..\include\string.h
+aicar\queue.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdlib.h
+aicar\queue.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\string.h
 aicar\queue.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/FreeRTOS.h
-aicar\queue.o: G:\Program Files\Keil\uv5\ARM\ARMCC\Bin\..\include\stddef.h
-aicar\queue.o: G:\Program Files\Keil\uv5\ARM\ARMCC\Bin\..\include\stdint.h
+aicar\queue.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stddef.h
+aicar\queue.o: C:\Keil_v5\ARM\ARMCC\Bin\..\include\stdint.h
 aicar\queue.o: ../Inc/FreeRTOSConfig.h
 aicar\queue.o: ../Inc/main.h
 aicar\queue.o: ../Middlewares/Third_Party/FreeRTOS/Source/include/projdefs.h
