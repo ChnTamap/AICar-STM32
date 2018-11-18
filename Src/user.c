@@ -140,6 +140,8 @@ void MotorChangeSpeed(void)
 #define TARGET_RAGE_X (int16_t)100
 #define TARGET_RAGE_Y (int16_t)20
 #define TARGET_CATCH_TIMES 20
+#define LOOK_ROTATE_SPEED 0//4000 //寻找时基础旋转速度
+#define LOOK_ROTATE_ADD 130	 //旋转加速度
 enum Stage
 {
 	stage_find_ball,
@@ -147,9 +149,11 @@ enum Stage
 	stage_find_rect,
 	stage_res_ball
 };
-uint8_t catch_times = 0;	   //球在可抓取范围内的次数
-uint8_t stage, lastStage = 0;  //处在的阶段
-int16_t datas[USART_DATA_LEN]; //Bufs
+uint8_t catch_times = 0;						//球在可抓取范围内的次数
+uint8_t stage, lastStage = 0;					//处在的阶段
+int16_t datas[USART_DATA_LEN];					//Bufs
+int16_t looking_rotate_set = LOOK_ROTATE_SPEED; //最高旋转速度设定
+int16_t looking_rotate = 0;						//寻找目标的旋转偏置
 void ReceiveDatas(void)
 {
 	//Receive data
@@ -161,6 +165,8 @@ void ReceiveDatas(void)
 	}
 	if (HAL_UART_Receive(&huart1, (uint8_t *)datas, USART_DATA_LEN * 2, 100) == HAL_OK)
 	{
+		//找到目标
+		looking_rotate = 0;
 		if (stage != stage_find_ball && stage != stage_find_rect)
 			return;
 		if (datas[0] > 0 && datas[0] < 640)
@@ -194,14 +200,22 @@ void ReceiveDatas(void)
 					//抓取
 					catch_times = 0;
 					stage++; //下一个阶段
-							 // datas[0] = 0;
-							 // datas[1] = 0;
+						// datas[0] = 0;
+						// datas[1] = 0;
 				}
 			}
 		}
 	}
 	else
 	{
+		if (looking_rotate == 0)
+			looking_rotate_set = -looking_rotate_set;
+		//使旋转速度逐渐接近最大
+		if (looking_rotate < looking_rotate_set)
+			looking_rotate += LOOK_ROTATE_ADD;
+		else if (looking_rotate > looking_rotate_set)
+			looking_rotate -= LOOK_ROTATE_ADD;
+		//削减PID
 		datas[0] *= 0.5;
 		datas[1] *= 0.5;
 	}
@@ -220,15 +234,15 @@ PID_typedef pidRot;
 PID_typedef pidMov;
 void MotorPIDInit(void)
 {
-	pidRot.P = 15;
+	pidRot.P = 13;
 	pidRot.I = 0.02;
 	pidRot.D = 15;
 	pidRot.lastDiv = TARGET_X;
 	pidRot.addI = 0;
 
-	pidMov.P = 30;
-	pidMov.I = 0.01;
-	pidMov.D = 20;
+	pidMov.P = 35;
+	pidMov.I = 0.1;
+	pidMov.D = 30;
 	pidMov.lastDiv = TARGET_Y;
 	pidMov.addI = 0;
 }
@@ -255,6 +269,7 @@ void MotorPID(void)
 			rotation = 8000;
 		else if (rotation < -8000)
 			rotation = -8000;
+		rotation += looking_rotate;
 		speedY = funPID(datas[1], &pidMov);
 		if (speedY > 8000)
 			speedY = 8000;
@@ -271,11 +286,11 @@ void MotorPID(void)
 
 //Servo
 #define SERVO_TIME_STEP 1
-//底部舵机
+//底部舵机 OK
 #define SER_0 0
-#define SER_0_UP 550
-#define SER_0_OUT 1000
-#define SER_0_DOWN 1800
+#define SER_0_UP 1200
+#define SER_0_OUT 1900
+#define SER_0_DOWN 2300
 //中间舵机
 #define SER_1 1
 #define SER_1_UP 2350
@@ -285,11 +300,11 @@ void MotorPID(void)
 #define SER_2 2
 #define SER_2_OPEN 1000
 #define SER_2_CLOSE 1650
-//摄像头舵机
+//摄像头舵机 OK
 #define SER_CAM 3
-#define SER_CAM_FAR 1500
-#define SER_CAM_NEAR 800
-uint8_t servoSpeed[4] = {4, 4, 10, 100};
+#define SER_CAM_FAR 1300
+#define SER_CAM_NEAR 600
+uint8_t servoSpeed[4] = {9, 9, 10, 100};
 uint16_t servoSet[4] = {SER_0_UP, SER_1_UP, SER_2_OPEN, SER_CAM_NEAR};
 void ServoChangePWM(void)
 {
