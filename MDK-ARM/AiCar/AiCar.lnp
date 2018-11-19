@@ -6,6 +6,7 @@
 "aicar\stm32f1xx_it.o"
 "aicar\stm32f1xx_hal_msp.o"
 "aicar\stm32f1xx_hal_timebase_tim.o"
+"aicar\pid.o"
 "aicar\stm32f1xx_hal_gpio_ex.o"
 "aicar\stm32f1xx_hal_tim.o"
 "aicar\stm32f1xx_hal_tim_ex.o"

@@ -1,5 +1,6 @@
 aicar\user.o: ..\Src\user.c
 aicar\user.o: ../Inc/main.h
+aicar\user.o: ../Inc/pid.h
 aicar\user.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal.h
 aicar\user.o: ../Inc/stm32f1xx_hal_conf.h
 aicar\user.o: ../Drivers/STM32F1xx_HAL_Driver/Inc/stm32f1xx_hal_rcc.h

@@ -1,5 +1,6 @@
 /* User Code */
 #include "main.h"
+#include "pid.h"
 #include "stm32f1xx_hal.h"
 #include "cmsis_os.h"
 #include "math.h"
@@ -94,52 +95,6 @@ void MotorCtrlLoop(void)
 	}
 }
 
-//电机控制DEMO
-#define PI 3.1415926535
-#define StepDelayTime 2000
-#define VEC_SPD 5000
-void MotorChangeSpeed(void)
-{
-	//Motor
-	//Up
-	speedY = VEC_SPD;
-	speedX = 0000;
-	osDelay(StepDelayTime);
-	//Right
-	speedY = 0000;
-	speedX = VEC_SPD;
-	osDelay(StepDelayTime);
-	//Down
-	speedY = -VEC_SPD;
-	speedX = 0000;
-	osDelay(StepDelayTime);
-	//Left
-	speedY = 0000;
-	speedX = -VEC_SPD;
-	osDelay(StepDelayTime);
-	//Circle
-	for (double i = 0; i < 2 * PI; i += 0.01)
-	{
-		speedX = VEC_SPD * cos(i);
-		speedY = VEC_SPD * sin(i);
-		osDelay(20);
-	}
-	//Rotate
-	speedY = 0000;
-	speedX = 0000;
-	rotation = VEC_SPD;
-	osDelay(StepDelayTime);
-	//Rotate
-	speedY = 0000;
-	speedX = 0000;
-	rotation = -VEC_SPD;
-	osDelay(StepDelayTime);
-	//Stop
-	speedY = 0000;
-	speedX = 0000;
-	rotation = 0000;
-}
-
 //Servo
 #define SERVO_TIME_STEP 1
 //底部舵机 OK
@@ -160,8 +115,8 @@ void MotorChangeSpeed(void)
 #define SER_CAM 3
 #define SER_CAM_FAR 1300
 #define SER_CAM_NEAR 600
-#define SER_CAM_SPD_HIGH 0xFF
-#define SER_CAM_SPD_LOW 10
+#define SER_CAM_SPD_HIGH 15
+#define SER_CAM_SPD_LOW 5
 #define SER_CAM_PID_BASE 50
 //判断摄像头舵机安全性
 #if (SER_CAM_FAR < SER_CAM_NEAR)
@@ -289,12 +244,13 @@ void ReceiveDatas(void)
 		HAL_UART_Transmit(&huart1, &stage, 1, 100);
 		lastStage = stage;
 	}
-	if (HAL_UART_Receive(&huart1, (uint8_t *)datas, USART_DATA_LEN * 2, 100) == HAL_OK)
+	if (HAL_UART_Receive(&huart1, (uint8_t *)datas, USART_DATA_LEN * 2, 160) == HAL_OK)
 	{
 		//找到目标
 		looking_rotate = 0;
 		looking_flag = 1;
-		servoSpeed[SER_CAM] = SER_CAM_SPD_HIGH;
+		if (servoSet[SER_CAM] != SER_CAM_FAR)
+			servoSpeed[SER_CAM] = SER_CAM_SPD_HIGH;
 		if (stage != stage_find_ball && stage != stage_find_rect)
 			return;
 		if (datas[0] > 0 && datas[0] < 640)
@@ -340,8 +296,8 @@ void ReceiveDatas(void)
 						//抓取
 						catch_times = 0;
 						stage++; //下一个阶段
-							// datas[0] = 0;
-							// datas[1] = 0;
+								 // datas[0] = 0;
+								 // datas[1] = 0;
 					}
 				}
 			}
@@ -372,14 +328,7 @@ void ReceiveDatas(void)
 }
 
 /* PID */
-typedef struct
-{
-	double P;
-	double I;
-	double D;
-	int lastDiv;
-	int addI;
-} PID_typedef;
+
 PID_typedef pidRot;
 PID_typedef pidMov;
 PID_typedef pidMovArea;
@@ -404,24 +353,11 @@ void MotorPIDInit(void)
 	pidMovArea.lastDiv = 0;
 	pidMovArea.addI = 0;
 
-	pidCam.P = 0.1;
+	pidCam.P = 0.05;
 	pidCam.I = 0;
 	pidCam.D = 0;
 	pidCam.lastDiv = 0;
 	pidCam.addI = 0;
-}
-int16_t funPID(int16_t div, PID_typedef *pid)
-{
-	int16_t value = div * pid->P;
-	pid->addI += div * pid->I;
-	if (pid->addI / value > 1)
-	{
-		pid->addI = value;
-	}
-	value += pid->addI;
-	value += (pid->lastDiv - div) * pid->D;
-	pid->lastDiv = div;
-	return value;
 }
 /* Motor Ctrl PID */
 void MotorPID(void)
@@ -496,6 +432,11 @@ void MotorPID(void)
 			speedY = 8000;
 		else if (speedY < -8000)
 			speedY = -8000;
+
+		//暂时屏蔽
+		speedX = 0;
+		speedY = 0;
+		rotation = 0;
 	}
 	else
 	{
