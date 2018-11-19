@@ -186,7 +186,7 @@
         <Ww>
           <count>7</count>
           <WinNumber>1</WinNumber>
-          <ItemText>servoSpeed,0x0A</ItemText>
+          <ItemText>datas,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>8</count>

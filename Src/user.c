@@ -137,11 +137,13 @@ void MotorChangeSpeed(void)
 #define TARGET_X 388
 #define TARGET_Y 278
 #define TARGET_H 200
+#define TARGET_SAVE_X 320
+#define TARGET_SAVE_H 450
 #define TARGET_RAGE_X (int16_t)100
 #define TARGET_RAGE_Y (int16_t)20
 #define TARGET_CATCH_TIMES 20
 #define LOOK_ROTATE_SPEED 4000 //寻找时基础旋转速度
-#define LOOK_ROTATE_ADD 130 //旋转加速度
+#define LOOK_ROTATE_ADD 130	//旋转加速度
 enum Stage
 {
 	stage_find_ball,
@@ -155,6 +157,7 @@ int16_t datas[USART_DATA_LEN];					//Bufs
 int16_t looking_rotate_set = LOOK_ROTATE_SPEED; //最高旋转速度设定
 int16_t looking_rotate = 0;						//寻找目标的旋转偏置
 uint8_t looking_flag = 0;
+int16_t dataX = 0,dataY = 0;
 void ReceiveDatas(void)
 {
 	//Receive data
@@ -173,18 +176,27 @@ void ReceiveDatas(void)
 			return;
 		if (datas[0] > 0 && datas[0] < 640)
 		{
-			//X
-			datas[0] = TARGET_X - datas[0];
-			//Y
-			datas[1] = TARGET_Y - datas[1];
-
+			if (stage == stage_find_ball)
+			{
+				//X
+				dataX = TARGET_X - datas[0];
+				//Y
+				dataY = TARGET_Y - datas[1];
+			}
+			else
+			{
+				//X
+				dataX = TARGET_SAVE_X - datas[0];
+				//Y - H
+				dataY = datas[3] - TARGET_SAVE_H;
+			}
 			//检测球在可抓取范围内
-			if (datas[0] < -TARGET_RAGE_X || datas[0] > (int16_t)TARGET_RAGE_X)
+			if (dataX < -TARGET_RAGE_X || dataX > (int16_t)TARGET_RAGE_X)
 			{
 				//False
 				catch_times = 0;
 			}
-			else if (datas[1] < -TARGET_RAGE_Y || datas[1] > (int16_t)TARGET_RAGE_Y)
+			else if (dataY < -TARGET_RAGE_Y || dataY > (int16_t)TARGET_RAGE_Y)
 			{
 				//False
 				catch_times = 0;
@@ -194,8 +206,8 @@ void ReceiveDatas(void)
 				//True
 				catch_times++;
 				//减慢速度
-				datas[0] *= 0.5;
-				datas[1] *= 0.5;
+				dataX *= 0.5;
+				dataY *= 0.5;
 				//判断次数
 				if (catch_times >= TARGET_CATCH_TIMES)
 				{
@@ -221,8 +233,8 @@ void ReceiveDatas(void)
 				looking_rotate -= LOOK_ROTATE_ADD;
 		}
 		//削减PID
-		datas[0] *= 0.5;
-		datas[1] *= 0.5;
+		dataX *= 0.5;
+		dataY *= 0.5;
 	}
 }
 
@@ -237,18 +249,25 @@ typedef struct
 } PID_typedef;
 PID_typedef pidRot;
 PID_typedef pidMov;
+PID_typedef pidMovArea;
 void MotorPIDInit(void)
 {
 	pidRot.P = 13;
 	pidRot.I = 0.02;
-	pidRot.D = 15;
+	pidRot.D = 20;
 	pidRot.lastDiv = TARGET_X;
 	pidRot.addI = 0;
 
-	pidMov.P = 35;
-	pidMov.I = 0.1;
-	pidMov.D = 30;
+	pidMov.P = 32;
+	pidMov.I = 0.06;
+	pidMov.D = 40;
 	pidMov.lastDiv = TARGET_Y;
+	pidMov.addI = 0;
+
+	pidMov.P = 23;
+	pidMov.I = 0.03;
+	pidMov.D = 40;
+	pidMov.lastDiv = TARGET_SAVE_H;
 	pidMov.addI = 0;
 }
 int16_t funPID(int16_t div, PID_typedef *pid)
@@ -269,13 +288,14 @@ void MotorPID(void)
 {
 	if (stage == stage_find_ball || stage == stage_find_rect)
 	{
-		rotation = funPID(datas[0], &pidRot);
+		rotation = funPID(dataX, &pidRot);
 		if (rotation > 8000)
 			rotation = 8000;
 		else if (rotation < -8000)
 			rotation = -8000;
 		rotation += looking_rotate;
-		speedY = funPID(datas[1], &pidMov);
+
+		speedY = funPID(dataY, (stage == stage_find_rect)?&pidMovArea:&pidMov);
 		if (speedY > 8000)
 			speedY = 8000;
 		else if (speedY < -8000)
@@ -309,7 +329,7 @@ void MotorPID(void)
 #define SER_CAM 3
 #define SER_CAM_FAR 1300
 #define SER_CAM_NEAR 600
-uint8_t servoSpeed[4] = {9, 9, 10, 100};
+uint8_t servoSpeed[4] = {9, 9, 10, 1000};
 uint16_t servoSet[4] = {SER_0_UP, SER_1_UP, SER_2_OPEN, SER_CAM_NEAR};
 void ServoChangePWM(void)
 {
