@@ -1,7 +1,7 @@
 [PreviousGenFiles]
-HeaderPath=E:/project/uv4/stm32/project/AICar/MainProj/AiCar/Inc
+HeaderPath=D:/project/STM32Proj/AiCar/AICar-STM32/Inc
 HeaderFiles=FreeRTOSConfig.h;stm32f1xx_it.h;stm32f1xx_hal_conf.h;main.h;
-SourcePath=E:/project/uv4/stm32/project/AICar/MainProj/AiCar/Src
+SourcePath=D:/project/STM32Proj/AiCar/AICar-STM32/Src
 SourceFiles=freertos.c;stm32f1xx_it.c;stm32f1xx_hal_msp.c;stm32f1xx_hal_timebase_TIM.c;main.c;
 
 [PreviousLibFiles]

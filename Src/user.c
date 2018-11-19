@@ -140,8 +140,8 @@ void MotorChangeSpeed(void)
 #define TARGET_RAGE_X (int16_t)100
 #define TARGET_RAGE_Y (int16_t)20
 #define TARGET_CATCH_TIMES 20
-#define LOOK_ROTATE_SPEED 0//4000 //寻找时基础旋转速度
-#define LOOK_ROTATE_ADD 130	 //旋转加速度
+#define LOOK_ROTATE_SPEED 4000 //寻找时基础旋转速度
+#define LOOK_ROTATE_ADD 130 //旋转加速度
 enum Stage
 {
 	stage_find_ball,
@@ -154,6 +154,7 @@ uint8_t stage, lastStage = 0;					//处在的阶段
 int16_t datas[USART_DATA_LEN];					//Bufs
 int16_t looking_rotate_set = LOOK_ROTATE_SPEED; //最高旋转速度设定
 int16_t looking_rotate = 0;						//寻找目标的旋转偏置
+uint8_t looking_flag = 0;
 void ReceiveDatas(void)
 {
 	//Receive data
@@ -167,6 +168,7 @@ void ReceiveDatas(void)
 	{
 		//找到目标
 		looking_rotate = 0;
+		looking_flag = 1;
 		if (stage != stage_find_ball && stage != stage_find_rect)
 			return;
 		if (datas[0] > 0 && datas[0] < 640)
@@ -200,21 +202,24 @@ void ReceiveDatas(void)
 					//抓取
 					catch_times = 0;
 					stage++; //下一个阶段
-						// datas[0] = 0;
-						// datas[1] = 0;
+							 // datas[0] = 0;
+							 // datas[1] = 0;
 				}
 			}
 		}
 	}
 	else
 	{
-		if (looking_rotate == 0)
-			looking_rotate_set = -looking_rotate_set;
-		//使旋转速度逐渐接近最大
-		if (looking_rotate < looking_rotate_set)
-			looking_rotate += LOOK_ROTATE_ADD;
-		else if (looking_rotate > looking_rotate_set)
-			looking_rotate -= LOOK_ROTATE_ADD;
+		if (looking_flag)
+		{
+			if (looking_rotate == 0)
+				looking_rotate_set = -looking_rotate_set;
+			//使旋转速度逐渐接近最大
+			if (looking_rotate < looking_rotate_set)
+				looking_rotate += LOOK_ROTATE_ADD;
+			else if (looking_rotate > looking_rotate_set)
+				looking_rotate -= LOOK_ROTATE_ADD;
+		}
 		//削减PID
 		datas[0] *= 0.5;
 		datas[1] *= 0.5;
@@ -290,16 +295,16 @@ void MotorPID(void)
 #define SER_0 0
 #define SER_0_UP 1200
 #define SER_0_OUT 1900
-#define SER_0_DOWN 2300
+#define SER_0_DOWN 2260
 //中间舵机
 #define SER_1 1
-#define SER_1_UP 2350
-#define SER_1_OUT 2000
-#define SER_1_DOWN 1900
-//手爪
+#define SER_1_UP 2200
+#define SER_1_OUT 1800
+#define SER_1_DOWN 2000
+//手爪 OK
 #define SER_2 2
-#define SER_2_OPEN 1000
-#define SER_2_CLOSE 1650
+#define SER_2_OPEN 550
+#define SER_2_CLOSE 1450
 //摄像头舵机 OK
 #define SER_CAM 3
 #define SER_CAM_FAR 1300
@@ -396,4 +401,12 @@ void ServoChangePWM(void)
 		}
 	}
 	t--;
+}
+
+void AllPer_Init(void)
+{
+	TIM3->CCR1 = SER_0_UP;
+	TIM3->CCR2 = SER_1_UP;
+	TIM3->CCR3 = SER_2_OPEN;
+	TIM3->CCR4 = SER_CAM_NEAR;
 }

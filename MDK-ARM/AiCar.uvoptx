@@ -186,7 +186,7 @@
         <Ww>
           <count>7</count>
           <WinNumber>1</WinNumber>
-          <ItemText>servoSpeed</ItemText>
+          <ItemText>servoSpeed,0x0A</ItemText>
         </Ww>
         <Ww>
           <count>8</count>
@@ -197,6 +197,16 @@
           <count>9</count>
           <WinNumber>1</WinNumber>
           <ItemText>looking_rotate,0x0A</ItemText>
+        </Ww>
+        <Ww>
+          <count>10</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>speedY,0x0A</ItemText>
+        </Ww>
+        <Ww>
+          <count>11</count>
+          <WinNumber>1</WinNumber>
+          <ItemText>datas[0],0x0A</ItemText>
         </Ww>
       </WatchWindow1>
       <Tracepoint>
