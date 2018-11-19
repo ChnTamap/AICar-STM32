@@ -162,7 +162,7 @@ void MotorChangeSpeed(void)
 #define SER_CAM_NEAR 600
 #define SER_CAM_SPD_HIGH 0xFF
 #define SER_CAM_SPD_LOW 10
-#define SER_CAM_PID_BASE 100
+#define SER_CAM_PID_BASE 50
 //判断摄像头舵机安全性
 #if (SER_CAM_FAR < SER_CAM_NEAR)
 #error "SER_CAM_DIR ERROR"
@@ -327,22 +327,28 @@ void ReceiveDatas(void)
 			else
 			{
 				//True
-				catch_times++;
-				//减慢速度
-				dataX *= 0.5;
-				dataY *= 0.5;
-				//判断次数
-				if (catch_times >= TARGET_CATCH_TIMES)
+				//抓取前提：摄像头处于最低状态
+				if (servoSet[SER_CAM] == SER_CAM_NEAR)
 				{
-					//抓取
-					catch_times = 0;
-					stage++; //下一个阶段
-							 // datas[0] = 0;
-							 // datas[1] = 0;
+					catch_times++;
+					//减慢速度
+					dataX *= 0.5;
+					dataY *= 0.5;
+					//判断次数
+					if (catch_times >= TARGET_CATCH_TIMES)
+					{
+						//抓取
+						catch_times = 0;
+						stage++; //下一个阶段
+							// datas[0] = 0;
+							// datas[1] = 0;
+					}
 				}
 			}
 		}
+		//数据范围检测END
 	}
+	//接收判断END
 	else
 	{
 		//未找到目标
@@ -423,6 +429,7 @@ void MotorPID(void)
 	int16_t camRot = 0;
 	if (stage == stage_find_ball || stage == stage_find_rect)
 	{
+		//PID
 		rotation = funPID(dataX, &pidRot);
 		if (rotation > 8000)
 			rotation = 8000;
@@ -431,10 +438,6 @@ void MotorPID(void)
 		rotation += looking_rotate;
 
 		speedY = funPID(dataY, (stage == stage_find_rect) ? &pidMovArea : &pidMov);
-		if (speedY > 8000)
-			speedY = 8000;
-		else if (speedY < -8000)
-			speedY = -8000;
 
 		//摄像头舵机PID
 		if (stage == stage_find_ball)
@@ -447,12 +450,26 @@ void MotorPID(void)
 			{
 				if (servoSet[SER_CAM] > SER_CAM_NEAR)
 				{
-					camRot = funPID(-dataY - SER_CAM_PID_BASE, &pidCam);
+					camRot = funPID(-dataY + SER_CAM_PID_BASE, &pidCam);
 					camRot += servoSet[SER_CAM];
 					//安全转动范围
-					if (camRot <= SER_CAM_FAR && camRot >= SER_CAM_NEAR)
+					if (camRot > SER_CAM_FAR)
 					{
-						servoSet[SER_CAM] = camRot;
+						camRot = SER_CAM_FAR;
+					}
+					else if (camRot < SER_CAM_NEAR)
+					{
+						camRot = SER_CAM_NEAR;
+					}
+					servoSet[SER_CAM] = camRot;
+
+					if (dataY)
+					{
+						/* 
+						当dataY有值时，意味着检测到球 
+						将摄像头倾角差作为速度标准，远慢近快
+						*/
+						// speedY = (SER_CAM_NEAR - camRot) * 10;
 					}
 				}
 				else
@@ -465,6 +482,7 @@ void MotorPID(void)
 			{
 				//安全归位
 				servoSet[SER_CAM] = SER_CAM_FAR;
+				speedY = 0;
 			}
 		}
 		else
@@ -472,6 +490,12 @@ void MotorPID(void)
 			//其他模式抬高摄像头
 			servoSet[SER_CAM] = SER_CAM_FAR;
 		}
+
+		//限速
+		if (speedY > 8000)
+			speedY = 8000;
+		else if (speedY < -8000)
+			speedY = -8000;
 	}
 	else
 	{
