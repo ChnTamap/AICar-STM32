@@ -4,7 +4,7 @@ int16_t funPID(int16_t div, PID_typedef *pid)
 {
 	int16_t value = div * pid->P;
 	pid->addI += div * pid->I;
-	if (pid->addI / value > 1)
+	if (pid->addI > value)
 	{
 		pid->addI = value;
 	}

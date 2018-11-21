@@ -95,23 +95,30 @@ void MotorCtrlLoop(void)
 	}
 }
 
+/* PID 变量 */
+PID_typedef pidRot;
+PID_typedef pidMov;
+PID_typedef pidMovArea;
+PID_typedef pidCam;
+
 //Servo
 #define SERVO_TIME_STEP 1
-//底部舵机 OK
+//底部舵机
 #define SER_0 0
-#define SER_0_UP 1200
-#define SER_0_OUT 1900
-#define SER_0_DOWN 2260
+#define SER_0_UP 1000
+#define SER_0_MID 1750
+#define SER_0_OUT 1900 //!
+#define SER_0_DOWN 2270
 //中间舵机
 #define SER_1 1
-#define SER_1_UP 2200
-#define SER_1_OUT 1800
-#define SER_1_DOWN 2000
-//手爪 OK
+#define SER_1_UP 1650
+#define SER_1_OUT 1500 //!
+#define SER_1_DOWN 1150
+//手爪
 #define SER_2 2
-#define SER_2_OPEN 550
-#define SER_2_CLOSE 1450
-//摄像头舵机 OK
+#define SER_2_OPEN 1200
+#define SER_2_CLOSE 1750
+//摄像头舵机
 #define SER_CAM 3
 #define SER_CAM_FAR 1100
 #define SER_CAM_NEAR 600
@@ -163,7 +170,15 @@ void ServoChangePWM(void)
 				}
 				else
 				{
-					//落下
+					//落下 (1)
+					servoSet[SER_0] = SER_0_MID;
+				}
+			}
+			else if (*serPwm[SER_0] == SER_0_MID)
+			{
+				if (*serPwm[SER_2] == SER_2_OPEN)
+				{
+					//落下 (2)
 					servoSet[SER_0] = SER_0_DOWN;
 					servoSet[SER_1] = SER_1_DOWN;
 				}
@@ -319,6 +334,12 @@ void ReceiveDatas(void)
 				looking_rotate += LOOK_ROTATE_ADD;
 			else if (looking_rotate > looking_rotate_set)
 				looking_rotate -= LOOK_ROTATE_ADD;
+
+			//Clear lastDiv and addI
+			pidMov.addI = 0;
+			pidMovArea.addI = 0;
+			pidMov.lastDiv = 0;
+			pidMovArea.lastDiv = 0;
 		}
 		//逐渐抬起摄像头
 		servoSpeed[SER_CAM] = SER_CAM_SPD_LOW;
@@ -330,11 +351,6 @@ void ReceiveDatas(void)
 }
 
 /* PID */
-
-PID_typedef pidRot;
-PID_typedef pidMov;
-PID_typedef pidMovArea;
-PID_typedef pidCam;
 void MotorPIDInit(void)
 {
 	pidRot.P = 8;
@@ -445,6 +461,13 @@ void MotorPID(void)
 		speedX = 0;
 		speedY = 0;
 		rotation = 0;
+		pidMov.addI = 0;
+		pidMovArea.addI = 0;
+		//放球压低摄像头
+		if (stage == stage_res_ball)
+			servoSet[SER_CAM] = SER_CAM_NEAR;
+		else if (stage == stage_catch_ball)
+			servoSet[SER_CAM] = SER_CAM_FAR;
 	}
 }
 
