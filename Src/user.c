@@ -6,6 +6,7 @@
 #include "math.h"
 
 extern UART_HandleTypeDef huart1;
+// #define MOTOR_STOP
 
 //全局阶段定义
 enum Stage
@@ -82,6 +83,7 @@ void MotorCtrlLoop(void)
 
 	for (i = 0; i < 4; i++)
 	{
+#ifndef MOTOR_STOP
 		if (speedS[i] < 0)
 		{
 			*MOTOR_BSRR[i] = MOTOR_NEG[i];
@@ -92,6 +94,7 @@ void MotorCtrlLoop(void)
 			*MOTOR_BSRR[i] = MOTOR_POS[i];
 			*vPwm[i] = speedS[i];
 		}
+#endif // !MOTOR_STOP
 	}
 }
 
@@ -108,7 +111,7 @@ PID_typedef pidCam;
 #define SER_0_UP 1000
 #define SER_0_MID 1750
 #define SER_0_OUT 1900 //!
-#define SER_0_DOWN 2270
+#define SER_0_DOWN 2320
 //中间舵机
 #define SER_1 1
 #define SER_1_UP 1650
@@ -120,16 +123,16 @@ PID_typedef pidCam;
 #define SER_2_CLOSE 1750
 //摄像头舵机
 #define SER_CAM 3
-#define SER_CAM_FAR 1100
+#define SER_CAM_FAR 1130
 #define SER_CAM_NEAR 600
-#define SER_CAM_SPD_HIGH 20
-#define SER_CAM_SPD_LOW 2
+#define SER_CAM_SPD_HIGH 40
+#define SER_CAM_SPD_LOW 4
 #define SER_CAM_PID_BASE 50
 //判断摄像头舵机安全性
 #if (SER_CAM_FAR < SER_CAM_NEAR)
 #error "SER_CAM_DIR ERROR"
 #endif
-uint16_t servoSpeed[4] = {9, 9, 10, 0xFF};
+uint16_t servoSpeed[4] = {12, 12, 50, 0xFF};
 uint16_t servoSet[4] = {SER_0_UP, SER_1_UP, SER_2_OPEN, SER_CAM_NEAR};
 void ServoChangePWM(void)
 {
@@ -313,8 +316,8 @@ void ReceiveDatas(void)
 						//抓取
 						catch_times = 0;
 						stage++; //下一个阶段
-								 // datas[0] = 0;
-								 // datas[1] = 0;
+							// datas[0] = 0;
+							// datas[1] = 0;
 					}
 				}
 			}
@@ -330,10 +333,10 @@ void ReceiveDatas(void)
 			if (looking_rotate == 0)
 				looking_rotate_set = -looking_rotate_set;
 			//使旋转速度逐渐接近最大
-			if (looking_rotate < looking_rotate_set)
-				looking_rotate += LOOK_ROTATE_ADD;
-			else if (looking_rotate > looking_rotate_set)
-				looking_rotate -= LOOK_ROTATE_ADD;
+			// if (looking_rotate < looking_rotate_set)
+			// 	looking_rotate += LOOK_ROTATE_ADD;
+			// else if (looking_rotate > looking_rotate_set)
+			// 	looking_rotate -= LOOK_ROTATE_ADD;
 
 			//Clear lastDiv and addI
 			pidMov.addI = 0;
@@ -355,12 +358,13 @@ void MotorPIDInit(void)
 {
 	pidRot.P = 8;
 	pidRot.I = 0.015;
-	pidRot.D = 30;
+	pidRot.D = 40;
 	pidRot.lastDiv = 0;
 	pidRot.addI = 0;
 
-	pidMov.P = 35;
-	pidMov.I = 0.1;
+	//还有调整位于MotorPID函数
+	pidMov.P = 20;
+	pidMov.I = 0;
 	pidMov.D = 40;
 	pidMov.lastDiv = 0;
 	pidMov.addI = 0;
@@ -423,13 +427,17 @@ void MotorPID(void)
 						当dataY有值时，意味着检测到球 
 						将摄像头倾角差作为速度标准，远慢近快
 						*/
-						speedY = (SER_CAM_NEAR - camRot) * 18;
+						// speedY = (SER_CAM_NEAR - camRot) * 18;
 					}
+					//PID I 0
+					pidMov.I = 0;
 				}
 				else
 				{
 					//安全归位
 					servoSet[SER_CAM] = SER_CAM_NEAR;
+					//PID I High
+					pidMov.I = 0.3;
 				}
 			}
 			else
