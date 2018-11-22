@@ -111,7 +111,7 @@ PID_typedef pidCam;
 #define SER_0_UP 1000
 #define SER_0_MID 1750
 #define SER_0_OUT 1900 //!
-#define SER_0_DOWN 2320
+#define SER_0_DOWN 2350
 //中间舵机
 #define SER_1 1
 #define SER_1_UP 1650
@@ -175,15 +175,17 @@ void ServoChangePWM(void)
 				{
 					//落下 (1)
 					servoSet[SER_0] = SER_0_MID;
+					servoSet[SER_2] = SER_2_CLOSE;
 				}
 			}
 			else if (*serPwm[SER_0] == SER_0_MID)
 			{
-				if (*serPwm[SER_2] == SER_2_OPEN)
+				if (*serPwm[SER_1] == SER_1_UP)
 				{
 					//落下 (2)
 					servoSet[SER_0] = SER_0_DOWN;
 					servoSet[SER_1] = SER_1_DOWN;
+					servoSet[SER_2] = SER_2_OPEN;
 				}
 			}
 			else if (*serPwm[SER_0] == SER_0_DOWN) //完成落下
@@ -195,6 +197,7 @@ void ServoChangePWM(void)
 					//抬起
 					servoSet[SER_0] = SER_0_UP;
 					servoSet[SER_1] = SER_1_UP;
+					stage = stage_find_rect;
 				}
 			}
 		}
@@ -237,6 +240,7 @@ void ServoChangePWM(void)
 //USART1RX -> Point -> PID -> Move -> Command -> USART1TX
 //串口 PID 流程
 #define USART_DATA_LEN 4
+//(461,86,222,167)
 #define TARGET_X 388
 #define TARGET_Y 278
 #define TARGET_H 200
@@ -265,6 +269,10 @@ void ReceiveDatas(void)
 	if (HAL_UART_Receive(&huart1, (uint8_t *)datas, USART_DATA_LEN * 2, 160) == HAL_OK)
 	{
 		//找到目标
+		if (looking_rotate * looking_rotate_set > 0)
+		{
+			looking_rotate = -looking_rotate / 8;
+		}
 		looking_rotate = 0;
 		looking_flag = 1;
 		if (servoSet[SER_CAM] != SER_CAM_FAR)
@@ -285,7 +293,7 @@ void ReceiveDatas(void)
 				//X
 				dataX = TARGET_SAVE_X - datas[0];
 				//Y - H
-				dataY = datas[3] - TARGET_SAVE_H;
+				dataY = (*serPwm[SER_0] == servoSet[SER_0]) ? (datas[3] - TARGET_SAVE_H) : 0;
 			}
 			//检测球在可抓取范围内
 			if ((dataX < -TARGET_RAGE_X || dataX > (int16_t)TARGET_RAGE_X) &&
@@ -308,8 +316,8 @@ void ReceiveDatas(void)
 				{
 					catch_times++;
 					//减慢速度
-					dataX *= 0.5;
-					dataY *= 0.5;
+					dataX /= 2;
+					dataY /= 2;
 					//判断次数
 					if (catch_times >= TARGET_CATCH_TIMES)
 					{
@@ -333,10 +341,11 @@ void ReceiveDatas(void)
 			if (looking_rotate == 0)
 				looking_rotate_set = -looking_rotate_set;
 			//使旋转速度逐渐接近最大
-			// if (looking_rotate < looking_rotate_set)
-			// 	looking_rotate += LOOK_ROTATE_ADD;
-			// else if (looking_rotate > looking_rotate_set)
-			// 	looking_rotate -= LOOK_ROTATE_ADD;
+			if (looking_rotate < looking_rotate_set)
+				looking_rotate += LOOK_ROTATE_ADD;
+			else if (looking_rotate > looking_rotate_set)
+				looking_rotate -= LOOK_ROTATE_ADD;
+			looking_rotate += (looking_rotate_set - looking_rotate) / 8;
 
 			//Clear lastDiv and addI
 			pidMov.addI = 0;
@@ -348,8 +357,8 @@ void ReceiveDatas(void)
 		servoSpeed[SER_CAM] = SER_CAM_SPD_LOW;
 		servoSet[SER_CAM] = SER_CAM_FAR;
 		//削减PID
-		dataX *= 0.5;
-		dataY *= 0.5;
+		dataX /= 2;
+		dataY /= 2;
 	}
 }
 
@@ -363,15 +372,15 @@ void MotorPIDInit(void)
 	pidRot.addI = 0;
 
 	//还有调整位于MotorPID函数
-	pidMov.P = 20;
+	pidMov.P = 23;
 	pidMov.I = 0;
-	pidMov.D = 40;
+	pidMov.D = 55;
 	pidMov.lastDiv = 0;
 	pidMov.addI = 0;
 
 	pidMovArea.P = 23;
 	pidMovArea.I = 0.03;
-	pidMovArea.D = 40;
+	pidMovArea.D = 55;
 	pidMovArea.lastDiv = 0;
 	pidMovArea.addI = 0;
 
@@ -408,7 +417,7 @@ void MotorPID(void)
 			{
 				if (servoSet[SER_CAM] > SER_CAM_NEAR)
 				{
-					camRot = funPID(-dataY - SER_CAM_PID_BASE, &pidCam);
+					camRot = dataY ? funPID(-dataY - SER_CAM_PID_BASE, &pidCam) : 0;
 					camRot += servoSet[SER_CAM];
 					//安全转动范围
 					if (camRot > SER_CAM_FAR)
@@ -431,13 +440,15 @@ void MotorPID(void)
 					}
 					//PID I 0
 					pidMov.I = 0;
+					pidMov.D = 50;
 				}
 				else
 				{
 					//安全归位
 					servoSet[SER_CAM] = SER_CAM_NEAR;
 					//PID I High
-					pidMov.I = 0.3;
+					pidMov.I = 0.25;
+					pidMov.D = 65;
 				}
 			}
 			else
@@ -471,6 +482,8 @@ void MotorPID(void)
 		rotation = 0;
 		pidMov.addI = 0;
 		pidMovArea.addI = 0;
+		pidRot.addI = 0;
+		pidCam.addI = 0;
 		//放球压低摄像头
 		if (stage == stage_res_ball)
 			servoSet[SER_CAM] = SER_CAM_NEAR;

@@ -191,7 +191,7 @@
         <Ww>
           <count>8</count>
           <WinNumber>1</WinNumber>
-          <ItemText>pidMov,0x0A</ItemText>
+          <ItemText>pidMovArea</ItemText>
         </Ww>
       </WatchWindow1>
       <Tracepoint>
