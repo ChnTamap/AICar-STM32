@@ -51,6 +51,7 @@ uint32_t const MOTOR_OFF[4] = {
 int16_t speedX = 0;
 int16_t speedY = 0;
 int16_t rotation = 0;
+uint16_t clockTime = 0;
 
 //电机寄存器、GPIO初始化
 void MotorCtrlInit(void)
@@ -75,6 +76,8 @@ void MotorCtrlLoop(void)
 {
 	int16_t speedS[4];
 	int16_t i;
+	//AddTime
+	clockTime++;
 	//Count value
 	speedS[0] = speedY - speedX + rotation;
 	speedS[2] = speedY - speedX - rotation;
@@ -115,7 +118,7 @@ PID_typedef pidCam;
 //中间舵机
 #define SER_1 1
 #define SER_1_UP 1650
-#define SER_1_OUT 1500 //!
+#define SER_1_OUT 1000 //!
 #define SER_1_DOWN 1150
 //手爪
 #define SER_2 2
@@ -127,7 +130,7 @@ PID_typedef pidCam;
 #define SER_CAM_NEAR 600
 #define SER_CAM_SPD_HIGH 40
 #define SER_CAM_SPD_LOW 4
-#define SER_CAM_PID_BASE 50
+#define SER_CAM_PID_BASE 60
 //判断摄像头舵机安全性
 #if (SER_CAM_FAR < SER_CAM_NEAR)
 #error "SER_CAM_DIR ERROR"
@@ -239,20 +242,53 @@ void ServoChangePWM(void)
 
 //USART1RX -> Point -> PID -> Move -> Command -> USART1TX
 //串口 PID 流程
-#define USART_DATA_LEN 4
-//(461,86,222,167)
-#define TARGET_X 388
-#define TARGET_Y 278
-#define TARGET_H 200
+#define BORDER 60
+#define STAGE_LEFT (BORDER)
+#define STAGE_RIGHT (640 - BORDER)
+#define STAGE_TOP (BORDER)
+#define STAGE_BOTTOM (480 - BORDER)
+//(399,289,188,206)
+#define TARGET_X 399 //388
+#define TARGET_Y 280 //278
+#define TARGET_W 180 //180*1.2
+#define TARGET_H 200 //200*1.2
 #define TARGET_SAVE_X 320
-#define TARGET_SAVE_H 450
-#define TARGET_RAGE_X (int16_t)100
-#define TARGET_RAGE_Y (int16_t)20
-#define TARGET_CATCH_TIMES 5
-#define LOOK_ROTATE_SPEED 6000					//寻找时基础旋转速度
-#define LOOK_ROTATE_ADD 250						//旋转加速度
+#define TARGET_SAVE_H 400
+//Target	//**调参
+#define TARGET_LEFT (TARGET_X - TARGET_W / 2)
+#define TARGET_RIGHT (TARGET_X + TARGET_W / 2)
+#define TARGET_TOP (TARGET_Y - TARGET_H / 2)
+#define TARGET_BOTTOM (TARGET_Y + TARGET_H / 2)
+//Target_Rect
+#define TARGET_RECT_LEFT 40
+#define TARGET_RECT_RIGHT (640 - BORDER)
+#define TARGET_RECT_TOP (BORDER)
+#define TARGET_RECT_BOTTOM (480 - BORDER * 2)
+#define TARGET_RAGE_X (int16_t)110
+#define TARGET_RAGE_Y (int16_t)15
+#define TARGET_CATCH_TIMES 7
+#define LOOK_ROTATE_SPEED 6000 //寻找时基础旋转速度
+#define LOOK_ROTATE_ADD 250	//旋转加速度
+//Datas
+typedef struct
+{
+	int16_t x;
+	int16_t y;
+	int16_t w;
+	int16_t h;
+} DataTypedef;
+typedef struct
+{
+	int16_t left;
+	int16_t top;
+	int16_t right;
+	int16_t bottom;
+} AreaTypedef;
+#define USART_DATA_LEN (sizeof(DataTypedef) / sizeof(int16_t))
+DataTypedef data_s = {0, 0, 0, 0};
+AreaTypedef area_s = {0, 0, 0, 0};
+int16_t *datas = (int16_t *)&data_s;			//Bufs
 uint8_t catch_times = 0;						//球在可抓取范围内的次数
-int16_t datas[USART_DATA_LEN];					//Bufs
 int16_t looking_rotate_set = LOOK_ROTATE_SPEED; //最高旋转速度设定
 int16_t looking_rotate = 0;						//寻找目标的旋转偏置
 uint8_t looking_flag = 0;
@@ -269,17 +305,13 @@ void ReceiveDatas(void)
 	if (HAL_UART_Receive(&huart1, (uint8_t *)datas, USART_DATA_LEN * 2, 160) == HAL_OK)
 	{
 		//找到目标
-		if (looking_rotate * looking_rotate_set > 0)
-		{
-			looking_rotate = -looking_rotate / 8;
-		}
 		looking_rotate = 0;
 		looking_flag = 1;
 		if (servoSet[SER_CAM] != SER_CAM_FAR)
 			servoSpeed[SER_CAM] = SER_CAM_SPD_HIGH;
 		if (stage != stage_find_ball && stage != stage_find_rect)
 			return;
-		if (datas[0] > 0 && datas[0] < 640)
+		if (data_s.x > 0 && data_s.x < 640)
 		{
 			if (stage == stage_find_ball)
 			{
@@ -295,8 +327,83 @@ void ReceiveDatas(void)
 				//Y - H
 				dataY = (*serPwm[SER_0] == servoSet[SER_0]) ? (datas[3] - TARGET_SAVE_H) : 0;
 			}
-			//检测球在可抓取范围内
-			if ((dataX < -TARGET_RAGE_X || dataX > (int16_t)TARGET_RAGE_X) &&
+
+			//**检测球在可抓取范围内
+			area_s.right = data_s.w / 2;
+			area_s.bottom = data_s.h / 2;
+			area_s.left = data_s.x - area_s.right;
+			area_s.top = data_s.y - area_s.bottom;
+			area_s.right += data_s.x;
+			area_s.bottom += data_s.y;
+			//抓球判断
+			if (stage == stage_find_ball)
+			{
+				if (servoSet[SER_CAM] == SER_CAM_NEAR)
+				{
+					catch_times++;
+					if (dataY > TARGET_RAGE_Y || dataY < -TARGET_RAGE_Y)
+					{
+						//Y
+						if (area_s.top <= TARGET_TOP)
+						{
+							if (area_s.bottom < TARGET_BOTTOM)
+							{
+								//No
+								catch_times = 0;
+							}
+						}
+						else if (area_s.bottom >= TARGET_BOTTOM)
+						{
+							//No
+							catch_times = 0;
+						}
+						//X
+						if (area_s.left <= TARGET_LEFT)
+						{
+							if (area_s.right < TARGET_RIGHT)
+							{
+								//No
+								catch_times = 0;
+							}
+						}
+						else if (area_s.right >= TARGET_RIGHT)
+						{
+							//No
+							catch_times = 0;
+						}
+					}
+					if (catch_times >= TARGET_CATCH_TIMES)
+					{
+						catch_times = 0;
+						stage++;
+					}
+				}
+			}
+			//放球判断
+			else if (stage == stage_find_rect)
+			{
+				if ((area_s.left <= TARGET_RECT_LEFT) &&
+					(area_s.right >= TARGET_RECT_RIGHT) &&
+					(area_s.top <= TARGET_RECT_TOP) /*  &&
+					(area_s.bottom >= TARGET_RECT_BOTTOM) */
+				)
+				{
+					catch_times++;
+					if (catch_times >= TARGET_CATCH_TIMES)
+					{
+						catch_times = 0;
+						stage++;
+					}
+				}
+				else
+					catch_times = 0;
+			}
+
+			// dataX = dataX * ((speedY > 0) ? speedY : (-speedY)) / 8000;
+			MotorPID();
+
+			//原先可抓范围检测代码 //**删除
+			/* if ((dataX < -TARGET_RAGE_X || dataX > (int16_t)TARGET_RAGE_X) &&
 				stage != stage_find_rect)
 			{
 				//False
@@ -328,7 +435,7 @@ void ReceiveDatas(void)
 							// datas[1] = 0;
 					}
 				}
-			}
+			} */
 		}
 		//数据范围检测END
 	}
@@ -346,12 +453,6 @@ void ReceiveDatas(void)
 			else if (looking_rotate > looking_rotate_set)
 				looking_rotate -= LOOK_ROTATE_ADD;
 			looking_rotate += (looking_rotate_set - looking_rotate) / 8;
-
-			//Clear lastDiv and addI
-			pidMov.addI = 0;
-			pidMovArea.addI = 0;
-			pidMov.lastDiv = 0;
-			pidMovArea.lastDiv = 0;
 		}
 		//逐渐抬起摄像头
 		servoSpeed[SER_CAM] = SER_CAM_SPD_LOW;
@@ -359,6 +460,12 @@ void ReceiveDatas(void)
 		//削减PID
 		dataX /= 2;
 		dataY /= 2;
+		MotorPID();
+		//Clear Pid I
+		pidRot.addI = 0;
+		pidMov.addI = 0;
+		pidMovArea.addI = 0;
+		pidCam.addI = 0;
 	}
 }
 
@@ -366,21 +473,21 @@ void ReceiveDatas(void)
 void MotorPIDInit(void)
 {
 	pidRot.P = 8;
-	pidRot.I = 0.015;
-	pidRot.D = 40;
+	pidRot.I = 0.05;
+	pidRot.D = 34;
 	pidRot.lastDiv = 0;
 	pidRot.addI = 0;
 
 	//还有调整位于MotorPID函数
-	pidMov.P = 23;
+	pidMov.P = 25;
 	pidMov.I = 0;
-	pidMov.D = 55;
+	pidMov.D = 23;
 	pidMov.lastDiv = 0;
 	pidMov.addI = 0;
 
 	pidMovArea.P = 23;
 	pidMovArea.I = 0.03;
-	pidMovArea.D = 55;
+	pidMovArea.D = 23;
 	pidMovArea.lastDiv = 0;
 	pidMovArea.addI = 0;
 
@@ -397,14 +504,14 @@ void MotorPID(void)
 	if (stage == stage_find_ball || stage == stage_find_rect)
 	{
 		//PID
-		rotation = funPID(dataX, &pidRot);
+		rotation = funPID(dataX, &pidRot, clockTime);
 		if (rotation > 8000)
 			rotation = 8000;
 		else if (rotation < -8000)
 			rotation = -8000;
 		rotation += looking_rotate;
 
-		speedY = funPID(dataY, (stage == stage_find_rect) ? &pidMovArea : &pidMov);
+		speedY = funPID(dataY, (stage == stage_find_rect) ? &pidMovArea : &pidMov, clockTime);
 
 		//摄像头舵机PID
 		if (stage == stage_find_ball)
@@ -417,7 +524,9 @@ void MotorPID(void)
 			{
 				if (servoSet[SER_CAM] > SER_CAM_NEAR)
 				{
-					camRot = dataY ? funPID(-dataY - SER_CAM_PID_BASE, &pidCam) : 0;
+					camRot = dataY ? funPID(-dataY - SER_CAM_PID_BASE,
+											&pidCam, clockTime)
+								   : 0;
 					camRot += servoSet[SER_CAM];
 					//安全转动范围
 					if (camRot > SER_CAM_FAR)
@@ -440,15 +549,15 @@ void MotorPID(void)
 					}
 					//PID I 0
 					pidMov.I = 0;
-					pidMov.D = 50;
+					pidMov.D = 20;
 				}
 				else
 				{
 					//安全归位
 					servoSet[SER_CAM] = SER_CAM_NEAR;
 					//PID I High
-					pidMov.I = 0.25;
-					pidMov.D = 65;
+					pidMov.I = 0.15;
+					pidMov.D = 30;
 				}
 			}
 			else
@@ -490,6 +599,7 @@ void MotorPID(void)
 		else if (stage == stage_catch_ball)
 			servoSet[SER_CAM] = SER_CAM_FAR;
 	}
+	clockTime = 0;
 }
 
 void AllPer_Init(void)

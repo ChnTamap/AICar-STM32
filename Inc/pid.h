@@ -12,6 +12,6 @@ typedef struct
 	int lastDiv;
 	int addI;
 } PID_typedef;
-int16_t funPID(int16_t div, PID_typedef *pid);
+int16_t funPID(int16_t div, PID_typedef *pid, uint16_t timeTick);
 
 #endif // !_PID_H_
