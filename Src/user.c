@@ -7,6 +7,7 @@
 
 extern UART_HandleTypeDef huart1;
 // #define MOTOR_STOP
+// #define STOP_CATCH
 
 //全局阶段定义
 enum Stage
@@ -17,6 +18,7 @@ enum Stage
 	stage_res_ball
 };
 uint8_t stage = 0, lastStage = 0; //处在的阶段
+uint8_t isBack = 0;
 
 //Reg of tim channel
 uint16_t *vPwm[4];   //Motor
@@ -129,8 +131,8 @@ PID_typedef pidCam;
 #define SER_CAM_FAR 1130
 #define SER_CAM_NEAR 600
 #define SER_CAM_SPD_HIGH 40
-#define SER_CAM_SPD_LOW 4
-#define SER_CAM_PID_BASE 60
+#define SER_CAM_SPD_LOW 20
+#define SER_CAM_PID_BASE 80
 //判断摄像头舵机安全性
 #if (SER_CAM_FAR < SER_CAM_NEAR)
 #error "SER_CAM_DIR ERROR"
@@ -213,7 +215,8 @@ void ServoChangePWM(void)
 				{
 					//打开着，意味着刚放完球
 					// servoSet[SER_2] = SER_2_CLOSE;	//不关爪子
-					stage = stage_find_ball; //下一个阶段
+					isBack = 1;
+					//下一个阶段
 				}
 				else
 				{
@@ -253,7 +256,7 @@ void ServoChangePWM(void)
 #define TARGET_W 180 //180*1.2
 #define TARGET_H 200 //200*1.2
 #define TARGET_SAVE_X 320
-#define TARGET_SAVE_H 400
+#define TARGET_SAVE_H 300
 //Target	//**调参
 #define TARGET_LEFT (TARGET_X - TARGET_W / 2)
 #define TARGET_RIGHT (TARGET_X + TARGET_W / 2)
@@ -270,14 +273,14 @@ void ServoChangePWM(void)
 #define LOOK_ROTATE_SPEED 6000 //寻找时基础旋转速度
 #define LOOK_ROTATE_ADD 250	//旋转加速度
 //Datas
-typedef struct
+typedef struct _DataTypedef
 {
 	int16_t x;
 	int16_t y;
 	int16_t w;
 	int16_t h;
 } DataTypedef;
-typedef struct
+typedef struct _AreaTypedef
 {
 	int16_t left;
 	int16_t top;
@@ -305,6 +308,13 @@ void ReceiveDatas(void)
 	if (HAL_UART_Receive(&huart1, (uint8_t *)datas, USART_DATA_LEN * 2, 160) == HAL_OK)
 	{
 		//找到目标
+		area_s.right = data_s.w / 2;
+		area_s.bottom = data_s.h / 2;
+		area_s.left = data_s.x - area_s.right;
+		area_s.top = data_s.y - area_s.bottom;
+		area_s.right += data_s.x;
+		area_s.bottom += data_s.y;
+
 		looking_rotate = 0;
 		looking_flag = 1;
 		if (servoSet[SER_CAM] != SER_CAM_FAR)
@@ -325,16 +335,11 @@ void ReceiveDatas(void)
 				//X
 				dataX = TARGET_SAVE_X - datas[0];
 				//Y - H
-				dataY = (*serPwm[SER_0] == servoSet[SER_0]) ? (datas[3] - TARGET_SAVE_H) : 0;
+				dataY = (*serPwm[SER_0] == servoSet[SER_0]) ? (TARGET_RECT_TOP - area_s.top) : 0;
 			}
 
-			//**检测球在可抓取范围内
-			area_s.right = data_s.w / 2;
-			area_s.bottom = data_s.h / 2;
-			area_s.left = data_s.x - area_s.right;
-			area_s.top = data_s.y - area_s.bottom;
-			area_s.right += data_s.x;
-			area_s.bottom += data_s.y;
+//**检测球在可抓取范围内
+#ifndef STOP_CATCH
 			//抓球判断
 			if (stage == stage_find_ball)
 			{
@@ -398,9 +403,11 @@ void ReceiveDatas(void)
 				else
 					catch_times = 0;
 			}
+#endif
 
 			// dataX = dataX * ((speedY > 0) ? speedY : (-speedY)) / 8000;
 			MotorPID();
+			speedX -= speedX / 10;
 
 			//原先可抓范围检测代码 //**删除
 			/* if ((dataX < -TARGET_RAGE_X || dataX > (int16_t)TARGET_RAGE_X) &&
@@ -458,8 +465,8 @@ void ReceiveDatas(void)
 		servoSpeed[SER_CAM] = SER_CAM_SPD_LOW;
 		servoSet[SER_CAM] = SER_CAM_FAR;
 		//削减PID
-		dataX /= 2;
-		dataY /= 2;
+		dataX = 0;
+		dataY = 0;
 		MotorPID();
 		//Clear Pid I
 		pidRot.addI = 0;
@@ -467,27 +474,38 @@ void ReceiveDatas(void)
 		pidMovArea.addI = 0;
 		pidCam.addI = 0;
 	}
+
+	if (isBack)
+	{
+		isBack = 0;
+		speedY = 4500;
+		speedX = 0;
+		rotation = 0;
+		osDelay(750);
+		speedY = 0;
+		stage = stage_find_ball;
+	}
 }
 
 /* PID */
 void MotorPIDInit(void)
 {
-	pidRot.P = 8;
+	pidRot.P = 9;
 	pidRot.I = 0.05;
-	pidRot.D = 34;
+	pidRot.D = 14;
 	pidRot.lastDiv = 0;
 	pidRot.addI = 0;
 
 	//还有调整位于MotorPID函数
-	pidMov.P = 25;
-	pidMov.I = 0;
-	pidMov.D = 23;
+	pidMov.P = 22;
+	pidMov.I = 0.07;
+	pidMov.D = 43;
 	pidMov.lastDiv = 0;
 	pidMov.addI = 0;
 
-	pidMovArea.P = 23;
-	pidMovArea.I = 0.03;
-	pidMovArea.D = 23;
+	pidMovArea.P = 20; //23;
+	pidMovArea.I = 0.04;
+	pidMovArea.D = 20;
 	pidMovArea.lastDiv = 0;
 	pidMovArea.addI = 0;
 
@@ -548,16 +566,16 @@ void MotorPID(void)
 						// speedY = (SER_CAM_NEAR - camRot) * 18;
 					}
 					//PID I 0
-					pidMov.I = 0;
-					pidMov.D = 20;
+					// pidMov.I = 0;
+					// pidMov.D = 20;
 				}
 				else
 				{
 					//安全归位
 					servoSet[SER_CAM] = SER_CAM_NEAR;
 					//PID I High
-					pidMov.I = 0.15;
-					pidMov.D = 30;
+					// pidMov.I = 0; //0.15;
+					// pidMov.D = 30;
 				}
 			}
 			else
