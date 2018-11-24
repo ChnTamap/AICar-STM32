@@ -114,7 +114,7 @@ PID_typedef pidMovArea;
 #define SER_0 0
 #define SER_0_UP 1000
 #define SER_0_MID 1750
-#define SER_0_OUT 1900 //!
+#define SER_0_OUT 2000 //!
 #define SER_0_DOWN 2350
 //中间舵机
 #define SER_1 1
@@ -136,7 +136,7 @@ PID_typedef pidMovArea;
 #if (SER_CAM_FAR < SER_CAM_NEAR)
 #error "SER_CAM_DIR ERROR"
 #endif
-uint16_t servoSpeed[4] = {12, 12, 50, 50};
+uint16_t servoSpeed[4] = {12, 12, 40, 60};
 uint16_t servoSet[4] = {SER_0_UP, SER_1_UP, SER_2_OPEN, SER_CAM_NEAR};
 void ServoChangePWM(void)
 {
@@ -250,14 +250,14 @@ void ServoChangePWM(void)
 #define STAGE_TOP (BORDER)
 #define STAGE_BOTTOM (480 - BORDER)
 //(399,289,188,206)
-#define CENTER_X 320
+#define CENTER_X 320 + 10 //解决砸球问题
 #define CENTER_Y 240
 #define TARGET_X 422 //388
 #define TARGET_Y 204 //278
 #define TARGET_W 244 //180*1.2
 #define TARGET_H 250 //200*1.2
 #define TARGET_SAVE_X 319
-#define TARGET_SAVE_H 300
+#define TARGET_SAVE_H 330
 #define CAM_DOWN_Y 222
 //Target	//**调参
 #define TARGET_LEFT (TARGET_X - TARGET_W / 2)
@@ -273,7 +273,10 @@ void ServoChangePWM(void)
 #define TARGET_RAGE_Y (int16_t)15
 #define TARGET_CATCH_TIMES 7
 #define LOOK_ROTATE_SPEED 6000 //寻找时基础旋转速度
-#define LOOK_ROTATE_ADD 250 //旋转加速度
+#define LOOK_ROTATE_ADD 250	//旋转加速度
+//WatchDog
+#define WATCH_DOG_MAX (7 * 100) //1 = 10000us = 10ms
+
 //Datas
 typedef struct _DataTypedef
 {
@@ -298,6 +301,7 @@ int16_t looking_rotate_set = LOOK_ROTATE_SPEED; //最高旋转速度设定
 int16_t looking_rotate = 0;						//寻找目标的旋转偏置
 uint8_t looking_flag = 0;
 int16_t dataX = 0, dataY = 0;
+uint16_t watchDogValue = 0;
 void ReceiveDatas(void)
 {
 	//Receive data
@@ -402,8 +406,8 @@ void ReceiveDatas(void)
 						stage++;
 					}
 				}
-				else
-					catch_times = 0;
+				else if (catch_times > 0)
+					catch_times--;
 			}
 #endif
 
@@ -521,14 +525,14 @@ void MotorPIDInit(void)
 	pidRot.addI = 0;
 
 	//还有调整位于MotorPID函数
-	pidMov.P = 20;
-	pidMov.I = 0.1;
+	pidMov.P = 19.6;
+	pidMov.I = 0.125;
 	pidMov.D = 70;
 	pidMov.lastDiv = 0;
 	pidMov.addI = 0;
 
-	pidMovArea.P = 20; //23;
-	pidMovArea.I = 0.04;
+	pidMovArea.P = 21; //23;
+	pidMovArea.I = 0.06;
 	pidMovArea.D = 20;
 	pidMovArea.lastDiv = 0;
 	pidMovArea.addI = 0;
@@ -573,6 +577,9 @@ void MotorPID(void)
 		else if (stage == stage_catch_ball)
 			servoSet[SER_CAM] = SER_CAM_FAR;
 	}
+
+	//ClockTime
+	watchDogValue += clockTime;
 	clockTime = 0;
 }
 
