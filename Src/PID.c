@@ -9,7 +9,7 @@ int16_t funPID(int16_t div, PID_typedef *pid,uint16_t timeTick)
 		pid->addI = value;
 	}
 	value += pid->addI;
-	value += (div - pid->lastDiv) * pid->D;
+	value += (div - pid->lastDiv) * pid->D / timeTick;
 	pid->lastDiv = div;
 	return value;
 }

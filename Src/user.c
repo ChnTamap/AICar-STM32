@@ -107,7 +107,6 @@ void MotorCtrlLoop(void)
 PID_typedef pidRot;
 PID_typedef pidMov;
 PID_typedef pidMovArea;
-PID_typedef pidCam;
 
 //Servo
 #define SERVO_TIME_STEP 1
@@ -137,7 +136,7 @@ PID_typedef pidCam;
 #if (SER_CAM_FAR < SER_CAM_NEAR)
 #error "SER_CAM_DIR ERROR"
 #endif
-uint16_t servoSpeed[4] = {12, 12, 50, 0xFF};
+uint16_t servoSpeed[4] = {12, 12, 50, 50};
 uint16_t servoSet[4] = {SER_0_UP, SER_1_UP, SER_2_OPEN, SER_CAM_NEAR};
 void ServoChangePWM(void)
 {
@@ -251,12 +250,15 @@ void ServoChangePWM(void)
 #define STAGE_TOP (BORDER)
 #define STAGE_BOTTOM (480 - BORDER)
 //(399,289,188,206)
-#define TARGET_X 399 //388
-#define TARGET_Y 280 //278
-#define TARGET_W 180 //180*1.2
-#define TARGET_H 200 //200*1.2
-#define TARGET_SAVE_X 320
+#define CENTER_X 320
+#define CENTER_Y 240
+#define TARGET_X 422 //388
+#define TARGET_Y 204 //278
+#define TARGET_W 244 //180*1.2
+#define TARGET_H 250 //200*1.2
+#define TARGET_SAVE_X 319
 #define TARGET_SAVE_H 300
+#define CAM_DOWN_Y 222
 //Target	//**调参
 #define TARGET_LEFT (TARGET_X - TARGET_W / 2)
 #define TARGET_RIGHT (TARGET_X + TARGET_W / 2)
@@ -271,7 +273,7 @@ void ServoChangePWM(void)
 #define TARGET_RAGE_Y (int16_t)15
 #define TARGET_CATCH_TIMES 7
 #define LOOK_ROTATE_SPEED 6000 //寻找时基础旋转速度
-#define LOOK_ROTATE_ADD 250	//旋转加速度
+#define LOOK_ROTATE_ADD 250 //旋转加速度
 //Datas
 typedef struct _DataTypedef
 {
@@ -326,14 +328,14 @@ void ReceiveDatas(void)
 			if (stage == stage_find_ball)
 			{
 				//X
-				dataX = TARGET_X - datas[0];
+				dataX = CENTER_X - data_s.x;
 				//Y
-				dataY = TARGET_Y - datas[1];
+				dataY = TARGET_Y - data_s.y;
 			}
 			else
 			{
 				//X
-				dataX = TARGET_SAVE_X - datas[0];
+				dataX = TARGET_SAVE_X - data_s.x;
 				//Y - H
 				dataY = (*serPwm[SER_0] == servoSet[SER_0]) ? (TARGET_RECT_TOP - area_s.top) : 0;
 			}
@@ -409,6 +411,29 @@ void ReceiveDatas(void)
 			MotorPID();
 			speedX -= speedX / 10;
 
+			//摄像头舵机
+			if (stage == stage_find_ball)
+			{
+				//找球模式才可能压低摄像头
+				if (servoSet[SER_CAM] == SER_CAM_FAR)
+				{
+					if (data_s.y < CAM_DOWN_Y)
+					{
+						servoSet[SER_CAM] = SER_CAM_NEAR;
+						dataY = 0;
+					}
+					else
+					{
+						dataY = CAM_DOWN_Y / 2 - data_s.y;
+					}
+				}
+			}
+			else
+			{
+				//其他模式抬高摄像头
+				servoSet[SER_CAM] = SER_CAM_FAR;
+			}
+
 			//原先可抓范围检测代码 //**删除
 			/* if ((dataX < -TARGET_RAGE_X || dataX > (int16_t)TARGET_RAGE_X) &&
 				stage != stage_find_rect)
@@ -472,7 +497,6 @@ void ReceiveDatas(void)
 		pidRot.addI = 0;
 		pidMov.addI = 0;
 		pidMovArea.addI = 0;
-		pidCam.addI = 0;
 	}
 
 	if (isBack)
@@ -481,7 +505,7 @@ void ReceiveDatas(void)
 		speedY = 4500;
 		speedX = 0;
 		rotation = 0;
-		osDelay(750);
+		osDelay(500);
 		speedY = 0;
 		stage = stage_find_ball;
 	}
@@ -492,14 +516,14 @@ void MotorPIDInit(void)
 {
 	pidRot.P = 9;
 	pidRot.I = 0.05;
-	pidRot.D = 14;
+	pidRot.D = 20;
 	pidRot.lastDiv = 0;
 	pidRot.addI = 0;
 
 	//还有调整位于MotorPID函数
-	pidMov.P = 22;
-	pidMov.I = 0.07;
-	pidMov.D = 43;
+	pidMov.P = 20;
+	pidMov.I = 0.1;
+	pidMov.D = 70;
 	pidMov.lastDiv = 0;
 	pidMov.addI = 0;
 
@@ -508,17 +532,10 @@ void MotorPIDInit(void)
 	pidMovArea.D = 20;
 	pidMovArea.lastDiv = 0;
 	pidMovArea.addI = 0;
-
-	pidCam.P = 0.05;
-	pidCam.I = 0;
-	pidCam.D = 0;
-	pidCam.lastDiv = 0;
-	pidCam.addI = 0;
 }
 /* Motor Ctrl PID */
 void MotorPID(void)
 {
-	int16_t camRot = 0;
 	if (stage == stage_find_ball || stage == stage_find_rect)
 	{
 		//PID
@@ -530,66 +547,6 @@ void MotorPID(void)
 		rotation += looking_rotate;
 
 		speedY = funPID(dataY, (stage == stage_find_rect) ? &pidMovArea : &pidMov, clockTime);
-
-		//摄像头舵机PID
-		if (stage == stage_find_ball)
-		{
-			//找球模式才可能压低摄像头
-			/* 如果未达到最低角度,
-			将球保持在抓球位置(向上)偏移
-			一定值位置（目的让车子向前） */
-			if (servoSet[SER_CAM] <= SER_CAM_FAR)
-			{
-				if (servoSet[SER_CAM] > SER_CAM_NEAR)
-				{
-					camRot = dataY ? funPID(-dataY - SER_CAM_PID_BASE,
-											&pidCam, clockTime)
-								   : 0;
-					camRot += servoSet[SER_CAM];
-					//安全转动范围
-					if (camRot > SER_CAM_FAR)
-					{
-						camRot = SER_CAM_FAR;
-					}
-					else if (camRot < SER_CAM_NEAR)
-					{
-						camRot = SER_CAM_NEAR;
-					}
-					servoSet[SER_CAM] = camRot;
-
-					if (dataY)
-					{
-						/* 
-						当dataY有值时，意味着检测到球 
-						将摄像头倾角差作为速度标准，远慢近快
-						*/
-						// speedY = (SER_CAM_NEAR - camRot) * 18;
-					}
-					//PID I 0
-					// pidMov.I = 0;
-					// pidMov.D = 20;
-				}
-				else
-				{
-					//安全归位
-					servoSet[SER_CAM] = SER_CAM_NEAR;
-					//PID I High
-					// pidMov.I = 0; //0.15;
-					// pidMov.D = 30;
-				}
-			}
-			else
-			{
-				//安全归位
-				servoSet[SER_CAM] = SER_CAM_FAR;
-				speedY = 0;
-			}
-		}
-		else
-		{
-			//其他模式抬高摄像头
-			servoSet[SER_CAM] = SER_CAM_FAR;
-		}
 
 		//限速
 		if (speedY > 8000)
@@ -610,7 +567,6 @@ void MotorPID(void)
 		pidMov.addI = 0;
 		pidMovArea.addI = 0;
 		pidRot.addI = 0;
-		pidCam.addI = 0;
 		//放球压低摄像头
 		if (stage == stage_res_ball)
 			servoSet[SER_CAM] = SER_CAM_NEAR;
