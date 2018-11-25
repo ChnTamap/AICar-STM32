@@ -265,8 +265,8 @@ void ServoChangePWM(void)
 #define TARGET_TOP (TARGET_Y - TARGET_H / 2)
 #define TARGET_BOTTOM (TARGET_Y + TARGET_H / 2)
 //Target_Rect
-#define TARGET_RECT_LEFT 40
-#define TARGET_RECT_RIGHT (640 - BORDER)
+#define TARGET_RECT_LEFT BORDER * 2
+#define TARGET_RECT_RIGHT (640 - BORDER * 2)
 #define TARGET_RECT_TOP (BORDER)
 #define TARGET_RECT_BOTTOM (480 - BORDER * 2)
 #define TARGET_RAGE_X (int16_t)110
@@ -275,7 +275,7 @@ void ServoChangePWM(void)
 #define LOOK_ROTATE_SPEED 6000 //寻找时基础旋转速度
 #define LOOK_ROTATE_ADD 250	//旋转加速度
 //WatchDog
-#define WATCH_DOG_MAX (7 * 100) //1 = 10000us = 10ms
+#define WATCH_DOG_MAX (650) //1 = 10000us = 10ms
 
 //Datas
 typedef struct _DataTypedef
@@ -301,7 +301,7 @@ int16_t looking_rotate_set = LOOK_ROTATE_SPEED; //最高旋转速度设定
 int16_t looking_rotate = 0;						//寻找目标的旋转偏置
 uint8_t looking_flag = 0;
 int16_t dataX = 0, dataY = 0;
-uint16_t watchDogValue = 0;
+uint16_t watchDogValue = WATCH_DOG_MAX;
 void ReceiveDatas(void)
 {
 	//Receive data
@@ -310,6 +310,7 @@ void ReceiveDatas(void)
 	{
 		HAL_UART_Transmit(&huart1, &stage, 1, 100);
 		lastStage = stage;
+		watchDogValue = WATCH_DOG_MAX;
 	}
 	if (HAL_UART_Receive(&huart1, (uint8_t *)datas, USART_DATA_LEN * 2, 160) == HAL_OK)
 	{
@@ -425,6 +426,7 @@ void ReceiveDatas(void)
 					{
 						servoSet[SER_CAM] = SER_CAM_NEAR;
 						dataY = 0;
+						watchDogValue = WATCH_DOG_MAX;
 					}
 					else
 					{
@@ -512,6 +514,7 @@ void ReceiveDatas(void)
 		osDelay(500);
 		speedY = 0;
 		stage = stage_find_ball;
+		watchDogValue = WATCH_DOG_MAX;
 	}
 }
 
@@ -579,7 +582,20 @@ void MotorPID(void)
 	}
 
 	//ClockTime
-	watchDogValue += clockTime;
+	if (looking_flag)
+	{
+		if (watchDogValue > clockTime)
+			watchDogValue -= clockTime;
+		else
+		{
+			watchDogValue = 0;
+			speedX = 4500;
+			osDelay(700);
+			speedX = 0;
+			rotation = 0;
+			watchDogValue = WATCH_DOG_MAX;
+		}
+	}
 	clockTime = 0;
 }
 
