@@ -273,7 +273,7 @@ void ServoChangePWM(void)
 #define TARGET_RAGE_Y (int16_t)15
 #define TARGET_CATCH_TIMES 7
 #define LOOK_ROTATE_SPEED 6000 //寻找时基础旋转速度
-#define LOOK_ROTATE_ADD 250 //旋转加速度
+#define LOOK_ROTATE_ADD 250	//旋转加速度
 //Datas
 typedef struct _DataTypedef
 {
@@ -539,12 +539,22 @@ void MotorPID(void)
 	if (stage == stage_find_ball || stage == stage_find_rect)
 	{
 		//PID
-		rotation = funPID(dataX, &pidRot, clockTime);
+		rotation = funPID(dataX, &pidRot, clockTime) / 2;
+		rotation += looking_rotate;
 		if (rotation > 8000)
 			rotation = 8000;
 		else if (rotation < -8000)
 			rotation = -8000;
-		rotation += looking_rotate;
+		if (rotation < 800 && rotation > -800 && rotation != 0)
+			rotation += ((dataX > 0) ? 1 : -1) * 800;
+
+		speedX = -funPID(dataX, &pidRot, clockTime) / 2;
+		if (speedX > 8000)
+			speedX = 8000;
+		else if (speedX < -8000)
+			speedX = -8000;
+		if (speedX < 800 && speedX > -800 && speedX != 0)
+			speedX += ((dataX > 0) ? -1 : 1) * 800;
 
 		speedY = funPID(dataY, (stage == stage_find_rect) ? &pidMovArea : &pidMov, clockTime);
 
@@ -553,6 +563,8 @@ void MotorPID(void)
 			speedY = 8000;
 		else if (speedY < -8000)
 			speedY = -8000;
+		if (speedY < 1000 && speedY > -1000 && speedY != 0)
+			speedY += ((dataY > 0) ? 1 : -1) * 800;
 
 		//暂时屏蔽
 		// speedX = 0;

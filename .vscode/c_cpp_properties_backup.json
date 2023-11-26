@@ -34,6 +34,9 @@
                 "__weak=__attribute__((weak))",
                 "__packed=__attribute__((__packed__))",
                 "uint32_t=unsigned int",
+                "uint16_t=unsigned int",
+                "int32_t=int",
+                "int16_t=int",
                 "USE_HAL_DRIVER"
             ],
             "limitSymbolsToIncludedHeaders": true,
