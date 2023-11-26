@@ -9,7 +9,7 @@ extern UART_HandleTypeDef huart1;
 // #define MOTOR_STOP
 // #define STOP_CATCH
 
-//È«¾Ö½×¶Î¶¨Òå
+//È«ï¿½Ö½×¶Î¶ï¿½ï¿½ï¿½
 enum Stage
 {
 	stage_find_ball,
@@ -17,7 +17,7 @@ enum Stage
 	stage_find_rect,
 	stage_res_ball
 };
-uint8_t stage = 0, lastStage = 0; //´¦ÔÚµÄ½×¶Î
+uint8_t stage = 0, lastStage = 0; //ï¿½ï¿½ï¿½ÚµÄ½×¶ï¿½
 uint8_t isBack = 0;
 
 //Reg of tim channel
@@ -55,7 +55,7 @@ int16_t speedY = 0;
 int16_t rotation = 0;
 uint16_t clockTime = 0;
 
-//µç»ú¼Ä´æÆ÷¡¢GPIO³õÊ¼»¯
+//ï¿½ï¿½ï¿½ï¿½Ä´ï¿½ï¿½ï¿½ï¿½ï¿½GPIOï¿½ï¿½Ê¼ï¿½ï¿½
 void MotorCtrlInit(void)
 {
 	vPwm[0] = (uint16_t *)&(TIM2->CCR1);
@@ -73,7 +73,7 @@ void MotorCtrlInit(void)
 	MOTOR_BSRR[3] = (uint32_t *)&(MI_P4_GPIO_Port->BSRR);
 	STBY_GPIO_Port->BSRR = STBY_Pin;
 }
-//µç»úËÙ¶È¿ØÖÆ£¨ÎÞPID£©
+//ï¿½ï¿½ï¿½ï¿½Ù¶È¿ï¿½ï¿½Æ£ï¿½ï¿½ï¿½PIDï¿½ï¿½
 void MotorCtrlLoop(void)
 {
 	int16_t speedS[4];
@@ -103,36 +103,36 @@ void MotorCtrlLoop(void)
 	}
 }
 
-/* PID ±äÁ¿ */
+/* PID ï¿½ï¿½ï¿½ï¿½ */
 PID_typedef pidRot;
 PID_typedef pidMov;
 PID_typedef pidMovArea;
 
 //Servo
 #define SERVO_TIME_STEP 1
-//µ×²¿¶æ»ú
+//ï¿½×²ï¿½ï¿½ï¿½ï¿½
 #define SER_0 0
 #define SER_0_UP 1000
 #define SER_0_MID 1750
 #define SER_0_OUT 2000 //!
 #define SER_0_DOWN 2350
-//ÖÐ¼ä¶æ»ú
+//ï¿½Ð¼ï¿½ï¿½ï¿½
 #define SER_1 1
 #define SER_1_UP 1650
 #define SER_1_OUT 1000 //!
 #define SER_1_DOWN 1150
-//ÊÖ×¦
+//ï¿½ï¿½×¦
 #define SER_2 2
 #define SER_2_OPEN 1200
 #define SER_2_CLOSE 1750
-//ÉãÏñÍ·¶æ»ú
+//ï¿½ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½
 #define SER_CAM 3
 #define SER_CAM_FAR 1130
 #define SER_CAM_NEAR 600
 #define SER_CAM_SPD_HIGH 40
 #define SER_CAM_SPD_LOW 20
 #define SER_CAM_PID_BASE 80
-//ÅÐ¶ÏÉãÏñÍ·¶æ»ú°²È«ÐÔ
+//ï¿½Ð¶ï¿½ï¿½ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½ï¿½ï¿½È«ï¿½ï¿½
 #if (SER_CAM_FAR < SER_CAM_NEAR)
 #error "SER_CAM_DIR ERROR"
 #endif
@@ -147,7 +147,7 @@ void ServoChangePWM(void)
 	{
 		t = SERVO_TIME_STEP;
 
-		//Move servo ºã¶¨ËÙ¶ÈÔË¶¯¶æ»ú
+		//Move servo ï¿½ã¶¨ï¿½Ù¶ï¿½ï¿½Ë¶ï¿½ï¿½ï¿½ï¿½
 		for (i = 0; i < 4; i++)
 		{
 			v = servoSet[i] - *serPwm[i];
@@ -168,16 +168,16 @@ void ServoChangePWM(void)
 		//Servo Task
 		if (stage == stage_catch_ball)
 		{
-			//×¥Çò
-			if (*serPwm[SER_0] == SER_0_UP) //Íê³ÉÌ§Æð
+			//×¥ï¿½ï¿½
+			if (*serPwm[SER_0] == SER_0_UP) //ï¿½ï¿½ï¿½Ì§ï¿½ï¿½
 			{
-				if (*serPwm[SER_2] == SER_2_CLOSE) //Î´×¥ÇòÊ±´ò¿ª×Å£¬±ÕºÏÒâÎ¶×Å×¥ºÃÁË
+				if (*serPwm[SER_2] == SER_2_CLOSE) //Î´×¥ï¿½ï¿½Ê±ï¿½ï¿½ï¿½Å£ï¿½ï¿½Õºï¿½ï¿½ï¿½Î¶ï¿½ï¿½×¥ï¿½ï¿½ï¿½ï¿½
 				{
 					stage = stage_find_rect;
 				}
 				else
 				{
-					//ÂäÏÂ (1)
+					//ï¿½ï¿½ï¿½ï¿½ (1)
 					servoSet[SER_0] = SER_0_MID;
 					servoSet[SER_2] = SER_2_CLOSE;
 				}
@@ -186,19 +186,19 @@ void ServoChangePWM(void)
 			{
 				if (*serPwm[SER_1] == SER_1_UP)
 				{
-					//ÂäÏÂ (2)
+					//ï¿½ï¿½ï¿½ï¿½ (2)
 					servoSet[SER_0] = SER_0_DOWN;
 					servoSet[SER_1] = SER_1_DOWN;
 					servoSet[SER_2] = SER_2_OPEN;
 				}
 			}
-			else if (*serPwm[SER_0] == SER_0_DOWN) //Íê³ÉÂäÏÂ
+			else if (*serPwm[SER_0] == SER_0_DOWN) //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			{
-				//¹Ø±ÕÊÖ×¦
+				//ï¿½Ø±ï¿½ï¿½ï¿½×¦
 				servoSet[SER_2] = SER_2_CLOSE;
-				if (*serPwm[SER_2] == SER_2_CLOSE) //Íê³É×¥È¡
+				if (*serPwm[SER_2] == SER_2_CLOSE) //ï¿½ï¿½ï¿½×¥È¡
 				{
-					//Ì§Æð
+					//Ì§ï¿½ï¿½
 					servoSet[SER_0] = SER_0_UP;
 					servoSet[SER_1] = SER_1_UP;
 					stage = stage_find_rect;
@@ -207,33 +207,33 @@ void ServoChangePWM(void)
 		}
 		else if (stage == stage_res_ball)
 		{
-			//·ÅÇò
-			if (*serPwm[SER_0] == SER_0_UP) //Íê³ÉÌ§Æð
+			//ï¿½ï¿½ï¿½ï¿½
+			if (*serPwm[SER_0] == SER_0_UP) //ï¿½ï¿½ï¿½Ì§ï¿½ï¿½
 			{
 				if (*serPwm[SER_2] == SER_2_OPEN)
 				{
-					//´ò¿ª×Å£¬ÒâÎ¶×Å¸Õ·ÅÍêÇò
-					// servoSet[SER_2] = SER_2_CLOSE;	//²»¹Ø×¦×Ó
+					//ï¿½ï¿½ï¿½Å£ï¿½ï¿½ï¿½Î¶ï¿½Å¸Õ·ï¿½ï¿½ï¿½ï¿½ï¿½
+					// servoSet[SER_2] = SER_2_CLOSE;	//ï¿½ï¿½ï¿½ï¿½×¦ï¿½ï¿½
 					isBack = 1;
-					//ÏÂÒ»¸ö½×¶Î
+					//ï¿½ï¿½Ò»ï¿½ï¿½ï¿½×¶ï¿½
 				}
 				else
 				{
-					//Éì³ö
+					//ï¿½ï¿½ï¿½
 					servoSet[SER_0] = SER_0_OUT;
 					servoSet[SER_1] = SER_1_OUT;
 				}
 			}
-			else if (*serPwm[SER_0] == SER_0_OUT) //Íê³ÉÉì³ö
+			else if (*serPwm[SER_0] == SER_0_OUT) //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 			{
-				//´ò¿ªÊÖ×¦£¬ÊÍ·ÅÐ¡Çò
+				//ï¿½ï¿½ï¿½ï¿½×¦ï¿½ï¿½ï¿½Í·ï¿½Ð¡ï¿½ï¿½
 				servoSet[SER_2] = SER_2_OPEN;
-				if (*serPwm[SER_2] == SER_2_OPEN) //Íê³ÉÊÍ·Å
+				if (*serPwm[SER_2] == SER_2_OPEN) //ï¿½ï¿½ï¿½ï¿½Í·ï¿½
 				{
-					//»Øµ½Ì§Æð
+					//ï¿½Øµï¿½Ì§ï¿½ï¿½
 					servoSet[SER_0] = SER_0_UP;
 					servoSet[SER_1] = SER_1_UP;
-					//ÕâÀïÏÈ²»¹Ø±Õ£¬×÷ÎªÍê³ÉÌ§ÆðÊ±£¬¼ì²âÊÇ¿ªÊ¼·ÅÇò»¹ÊÇ½áÊø·ÅÇòµÄÒÀ¾Ý
+					//ï¿½ï¿½ï¿½ï¿½ï¿½È²ï¿½ï¿½Ø±Õ£ï¿½ï¿½ï¿½Îªï¿½ï¿½ï¿½Ì§ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ç¿ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½Ç½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 					// servoSet[3] = SER_2_CLOSE;
 				}
 			}
@@ -243,14 +243,14 @@ void ServoChangePWM(void)
 }
 
 //USART1RX -> Point -> PID -> Move -> Command -> USART1TX
-//´®¿Ú PID Á÷³Ì
+//ï¿½ï¿½ï¿½ï¿½ PID ï¿½ï¿½ï¿½ï¿½
 #define BORDER 60
 #define STAGE_LEFT (BORDER)
 #define STAGE_RIGHT (640 - BORDER)
 #define STAGE_TOP (BORDER)
 #define STAGE_BOTTOM (480 - BORDER)
 //(399,289,188,206)
-#define CENTER_X 320 + 10 //½â¾öÔÒÇòÎÊÌâ
+#define CENTER_X 320 + 10 //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 #define CENTER_Y 240
 #define TARGET_X 422 //388
 #define TARGET_Y 204 //278
@@ -259,7 +259,7 @@ void ServoChangePWM(void)
 #define TARGET_SAVE_X 319
 #define TARGET_SAVE_H 330
 #define CAM_DOWN_Y 222
-//Target	//**µ÷²Î
+//Target	//**ï¿½ï¿½ï¿½ï¿½
 #define TARGET_LEFT (TARGET_X - TARGET_W / 2)
 #define TARGET_RIGHT (TARGET_X + TARGET_W / 2)
 #define TARGET_TOP (TARGET_Y - TARGET_H / 2)
@@ -272,8 +272,8 @@ void ServoChangePWM(void)
 #define TARGET_RAGE_X (int16_t)110
 #define TARGET_RAGE_Y (int16_t)15
 #define TARGET_CATCH_TIMES 7
-#define LOOK_ROTATE_SPEED 6000 //Ñ°ÕÒÊ±»ù´¡Ðý×ªËÙ¶È
-#define LOOK_ROTATE_ADD 250	//Ðý×ª¼ÓËÙ¶È
+#define LOOK_ROTATE_SPEED 6000 //Ñ°ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½Ù¶ï¿½
+#define LOOK_ROTATE_ADD 250	//ï¿½ï¿½×ªï¿½ï¿½ï¿½Ù¶ï¿½
 //WatchDog
 #define WATCH_DOG_MAX (650) //1 = 10000us = 10ms
 
@@ -296,9 +296,9 @@ typedef struct _AreaTypedef
 DataTypedef data_s = {0, 0, 0, 0};
 AreaTypedef area_s = {0, 0, 0, 0};
 int16_t *datas = (int16_t *)&data_s;			//Bufs
-uint8_t catch_times = 0;						//ÇòÔÚ¿É×¥È¡·¶Î§ÄÚµÄ´ÎÊý
-int16_t looking_rotate_set = LOOK_ROTATE_SPEED; //×î¸ßÐý×ªËÙ¶ÈÉè¶¨
-int16_t looking_rotate = 0;						//Ñ°ÕÒÄ¿±êµÄÐý×ªÆ«ÖÃ
+uint8_t catch_times = 0;						//ï¿½ï¿½ï¿½Ú¿ï¿½×¥È¡ï¿½ï¿½Î§ï¿½ÚµÄ´ï¿½ï¿½ï¿½
+int16_t looking_rotate_set = LOOK_ROTATE_SPEED; //ï¿½ï¿½ï¿½ï¿½ï¿½×ªï¿½Ù¶ï¿½ï¿½è¶¨
+int16_t looking_rotate = 0;						//Ñ°ï¿½ï¿½Ä¿ï¿½ï¿½ï¿½ï¿½ï¿½×ªÆ«ï¿½ï¿½
 uint8_t looking_flag = 0;
 int16_t dataX = 0, dataY = 0;
 uint16_t watchDogValue = WATCH_DOG_MAX;
@@ -314,7 +314,7 @@ void ReceiveDatas(void)
 	}
 	if (HAL_UART_Receive(&huart1, (uint8_t *)datas, USART_DATA_LEN * 2, 160) == HAL_OK)
 	{
-		//ÕÒµ½Ä¿±ê
+		//ï¿½Òµï¿½Ä¿ï¿½ï¿½
 		area_s.right = data_s.w / 2;
 		area_s.bottom = data_s.h / 2;
 		area_s.left = data_s.x - area_s.right;
@@ -345,9 +345,9 @@ void ReceiveDatas(void)
 				dataY = (*serPwm[SER_0] == servoSet[SER_0]) ? (TARGET_RECT_TOP - area_s.top) : 0;
 			}
 
-//**¼ì²âÇòÔÚ¿É×¥È¡·¶Î§ÄÚ
+//**ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¿ï¿½×¥È¡ï¿½ï¿½Î§ï¿½ï¿½
 #ifndef STOP_CATCH
-			//×¥ÇòÅÐ¶Ï
+			//×¥ï¿½ï¿½ï¿½Ð¶ï¿½
 			if (stage == stage_find_ball)
 			{
 				if (servoSet[SER_CAM] == SER_CAM_NEAR)
@@ -391,7 +391,7 @@ void ReceiveDatas(void)
 					}
 				}
 			}
-			//·ÅÇòÅÐ¶Ï
+			//ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½
 			else if (stage == stage_find_rect)
 			{
 				if ((area_s.left <= TARGET_RECT_LEFT) &&
@@ -416,10 +416,10 @@ void ReceiveDatas(void)
 			MotorPID();
 			speedX -= speedX / 10;
 
-			//ÉãÏñÍ·¶æ»ú
+			//ï¿½ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½
 			if (stage == stage_find_ball)
 			{
-				//ÕÒÇòÄ£Ê½²Å¿ÉÄÜÑ¹µÍÉãÏñÍ·
+				//ï¿½ï¿½ï¿½ï¿½Ä£Ê½ï¿½Å¿ï¿½ï¿½ï¿½Ñ¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í·
 				if (servoSet[SER_CAM] == SER_CAM_FAR)
 				{
 					if (data_s.y < CAM_DOWN_Y)
@@ -436,11 +436,11 @@ void ReceiveDatas(void)
 			}
 			else
 			{
-				//ÆäËûÄ£Ê½Ì§¸ßÉãÏñÍ·
+				//ï¿½ï¿½ï¿½ï¿½Ä£Ê½Ì§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í·
 				servoSet[SER_CAM] = SER_CAM_FAR;
 			}
 
-			//Ô­ÏÈ¿É×¥·¶Î§¼ì²â´úÂë //**É¾³ý
+			//Ô­ï¿½È¿ï¿½×¥ï¿½ï¿½Î§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ //**É¾ï¿½ï¿½
 			/* if ((dataX < -TARGET_RAGE_X || dataX > (int16_t)TARGET_RAGE_X) &&
 				stage != stage_find_rect)
 			{
@@ -456,46 +456,46 @@ void ReceiveDatas(void)
 			else
 			{
 				//True
-				//×¥È¡Ç°Ìá£ºÉãÏñÍ·´¦ÓÚ×îµÍ×´Ì¬
+				//×¥È¡Ç°ï¿½á£ºï¿½ï¿½ï¿½ï¿½Í·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½×´Ì¬
 				if (servoSet[SER_CAM] == SER_CAM_NEAR || stage == stage_find_rect)
 				{
 					catch_times++;
-					//¼õÂýËÙ¶È
+					//ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶ï¿½
 					dataX /= 2;
 					dataY /= 2;
-					//ÅÐ¶Ï´ÎÊý
+					//ï¿½Ð¶Ï´ï¿½ï¿½ï¿½
 					if (catch_times >= TARGET_CATCH_TIMES)
 					{
 						//×¥È¡
 						catch_times = 0;
-						stage++; //ÏÂÒ»¸ö½×¶Î
+						stage++; //ï¿½ï¿½Ò»ï¿½ï¿½ï¿½×¶ï¿½
 							// datas[0] = 0;
 							// datas[1] = 0;
 					}
 				}
 			} */
 		}
-		//Êý¾Ý·¶Î§¼ì²âEND
+		//ï¿½ï¿½ï¿½Ý·ï¿½Î§ï¿½ï¿½ï¿½END
 	}
-	//½ÓÊÕÅÐ¶ÏEND
+	//ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½END
 	else
 	{
-		//Î´ÕÒµ½Ä¿±ê
+		//Î´ï¿½Òµï¿½Ä¿ï¿½ï¿½
 		if (looking_flag)
 		{
 			if (looking_rotate == 0)
 				looking_rotate_set = -looking_rotate_set;
-			//Ê¹Ðý×ªËÙ¶ÈÖð½¥½Ó½ü×î´ó
+			//Ê¹ï¿½ï¿½×ªï¿½Ù¶ï¿½ï¿½ð½¥½Ó½ï¿½ï¿½ï¿½ï¿½
 			if (looking_rotate < looking_rotate_set)
 				looking_rotate += LOOK_ROTATE_ADD;
 			else if (looking_rotate > looking_rotate_set)
 				looking_rotate -= LOOK_ROTATE_ADD;
 			looking_rotate += (looking_rotate_set - looking_rotate) / 8;
 		}
-		//Öð½¥Ì§ÆðÉãÏñÍ·
+		//ï¿½ï¿½Ì§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í·
 		servoSpeed[SER_CAM] = SER_CAM_SPD_LOW;
 		servoSet[SER_CAM] = SER_CAM_FAR;
-		//Ï÷¼õPID
+		//ï¿½ï¿½ï¿½ï¿½PID
 		dataX = 0;
 		dataY = 0;
 		MotorPID();
@@ -527,7 +527,7 @@ void MotorPIDInit(void)
 	pidRot.lastDiv = 0;
 	pidRot.addI = 0;
 
-	//»¹ÓÐµ÷ÕûÎ»ÓÚMotorPIDº¯Êý
+	//ï¿½ï¿½ï¿½Ðµï¿½ï¿½ï¿½Î»ï¿½ï¿½MotorPIDï¿½ï¿½ï¿½ï¿½
 	pidMov.P = 19.6;
 	pidMov.I = 0.125;
 	pidMov.D = 70;
@@ -546,22 +546,34 @@ void MotorPID(void)
 	if (stage == stage_find_ball || stage == stage_find_rect)
 	{
 		//PID
-		rotation = funPID(dataX, &pidRot, clockTime);
+		rotation = funPID(dataX, &pidRot, clockTime) / 2;
+		rotation += looking_rotate;
 		if (rotation > 8000)
 			rotation = 8000;
 		else if (rotation < -8000)
 			rotation = -8000;
-		rotation += looking_rotate;
+		if (rotation < 800 && rotation > -800 && rotation != 0)
+			rotation += ((dataX > 0) ? 1 : -1) * 800;
+
+		speedX = -funPID(dataX, &pidRot, clockTime) / 2;
+		if (speedX > 8000)
+			speedX = 8000;
+		else if (speedX < -8000)
+			speedX = -8000;
+		if (speedX < 800 && speedX > -800 && speedX != 0)
+			speedX += ((dataX > 0) ? -1 : 1) * 800;
 
 		speedY = funPID(dataY, (stage == stage_find_rect) ? &pidMovArea : &pidMov, clockTime);
 
-		//ÏÞËÙ
+		//ï¿½ï¿½ï¿½ï¿½
 		if (speedY > 8000)
 			speedY = 8000;
 		else if (speedY < -8000)
 			speedY = -8000;
+		if (speedY < 1000 && speedY > -1000 && speedY != 0)
+			speedY += ((dataY > 0) ? 1 : -1) * 800;
 
-		//ÔÝÊ±ÆÁ±Î
+		//ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½
 		// speedX = 0;
 		// speedY = 0;
 		// rotation = 0;
@@ -574,7 +586,7 @@ void MotorPID(void)
 		pidMov.addI = 0;
 		pidMovArea.addI = 0;
 		pidRot.addI = 0;
-		//·ÅÇòÑ¹µÍÉãÏñÍ·
+		//ï¿½ï¿½ï¿½ï¿½Ñ¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Í·
 		if (stage == stage_res_ball)
 			servoSet[SER_CAM] = SER_CAM_NEAR;
 		else if (stage == stage_catch_ball)
