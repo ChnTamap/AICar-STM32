@@ -108,6 +108,8 @@
 /* #define USE_FULL_ASSERT    1U */
 
 /* USER CODE BEGIN Private defines */
+void AllPer_Init(void); //电机初始化
+
 void MotorCtrlLoop(void);
 void MotorCtrlInit(void);
 
@@ -121,9 +123,10 @@ void ServoChangePWM(void);
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
- extern "C" {
+extern "C"
+{
 #endif
-void _Error_Handler(char *, int);
+  void _Error_Handler(char *, int);
 
 #define Error_Handler() _Error_Handler(__FILE__, __LINE__)
 #ifdef __cplusplus

@@ -10,7 +10,7 @@
 		"stm32f1xx_hal_rcc.h": "c",
 		"stm32f1xx_hal_def.h": "c",
 		"stm32f1xx.h": "c",
-		"math.h": "c"
-	},
-	"C_Cpp.dimInactiveRegions": true
+		"math.h": "c",
+		"pid.h": "c"
+	}
 }

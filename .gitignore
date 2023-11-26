@@ -1,5 +1,3 @@
-.mxproject
-Drivers
-MDK-ARM
-Middlewares
 .vscode/c_cpp_properties.json
+MDK-ARM/AiCar
+MDK-ARM/AiCar/cmsis_os.d

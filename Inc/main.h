@@ -108,6 +108,8 @@
 /* #define USE_FULL_ASSERT    1U */
 
 /* USER CODE BEGIN Private defines */
+void AllPer_Init(void); //电机初始化
+
 void MotorCtrlLoop(void);
 void MotorCtrlInit(void);
 
